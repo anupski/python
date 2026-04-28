@@ -34,7 +34,7 @@ print("\nAvailable classes:")
 print("1. Warrior - High health, low mana")
 print("2. Mage - Low health, high mana")
 print("3. Rogue - Balanced stats")
-print("4. Knight - High health, balanced mana")
+print("4. Knight - High health, balanced mana (COST: 200 gold)")
 
 class_choice = input("Select your class (1-4): ")
 match class_choice:
@@ -51,9 +51,19 @@ match class_choice:
         player_health = 100
         player_mana = 80
     case "4":
-        player_class = "Knight"
-        player_health = 140
-        player_mana = 70
+        
+        if gold >= 200:
+            gold -= 200
+            player_class = "Knight"
+            player_health = 140
+            player_mana = 70
+            print("You purchased the Knight class for 200 gold!")
+        else:
+            print("You don't have enough gold to unlock the Knight class!")
+            print("You need 200 gold. Choosing Adventurer instead.")
+            player_class = "Adventurer"
+            player_health = 100
+            player_mana = 50
     case _:
         player_class = "Adventurer"
         player_health = 100
@@ -94,6 +104,12 @@ for quest in quests:
 
 quest_active = True
 while quest_active:
+    
+    print("\n--- QUEST LIST ---")
+    for i, quest in enumerate(quests):
+        status = "✓ Completed" if quest["completed"] else "○ Available"
+        print(f"  {i+1}. {quest['name']} - Reward: {quest['reward']} gold [{status}]")
+    
     print("\n--- Quest Menu ---")
     print("1. Accept a quest")
     print("2. View quest progress")
@@ -376,9 +392,16 @@ def enter_dungeon(player_class, player_health, player_mana, gold, inventory):
 if __name__ == "__main__":
     
     dungeon_ready = False
-   
+    
+    
     if level >= 20 and stats_points >= 1000 and all(inventory[item] for item in inventory):
-        dungeon_ready = True
+        
+        if player_class == "Knight":
+            dungeon_ready = True
+            print("\n=== You are a Knight and ready to enter the dungeon! ===")
+        else:
+            print("\n=== Only the Knight class can enter the Dungeon of Ra! ===")
+            print(f"You are a {player_class}, not a Knight.")
+            print("The dungeon rejects all who are not Knights!")
     if dungeon_ready:
         enter_dungeon(player_class, player_health, player_mana, gold, inventory)
-ngeon.")
