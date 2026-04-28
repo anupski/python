@@ -1,14 +1,9 @@
 level = 20
 stats_points = 1200
-
-
 actual_beacon = True
 actual_knight = True
 actual_orb_of_truth = True
 actual_orb_slot = True
-
-
-
 inventory = {
     "beacon": actual_beacon,
     "knight": actual_knight,
@@ -16,63 +11,11 @@ inventory = {
     "orb_slot": actual_orb_slot
 }
 
-print("=== INVENTORY CHECK ===")
-for item, has_item in inventory.items():
-    status = "✓ Active" if has_item else "✗ Missing"
-    print(f"{item.replace('_', ' ').title()}: {status}")
-
-
-def game_menu():
-    print("\n=== DUNGEON OF RA - MENU ===")
-    print("1. Check player status")
-    print("2. View inventory details")
-    print("3. Attempt dungeon entry")
-    print("4. Exit")
-    
-    choice = input("Select an option (1-4): ")
-    return choice
-
-
-def handle_player_action(action):
-    match action:
-        case "1":
-            print(f"\n--- Player Status ---")
-            print(f"Level: {level}")
-            print(f"Stats Points: {stats_points}")
-            print(f"Ready for dungeon: {level >= 20 and stats_points >= 1000}")
-        case "2":
-            print(f"\n--- Inventory Details ---")
-            for item, has_item in inventory.items():
-                print(f"  - {item.replace('_', ' ').title()}: {'Yes' if has_item else 'No'}")
-        case "3":
-            print(f"\n--- Dungeon Entry ---")
-            if level >= 20 and stats_points >= 1000:
-                print("You attempt to enter the dungeon of Ra...")
-            else:
-                print("You are not strong enough to enter.")
-        case "4":
-            print("Goodbye, wanderer!")
-            return False
-        case _:
-            print("Invalid option. Please try again.")
-    return True
-
-
-menu_active = True
-while menu_active:
-    choice = game_menu()
-    menu_active = handle_player_action(choice)
-
-player_claims_beacon = input("-| Do you have the beacon? |- (yes/no): ").lower() == "yes"
-
-
-
 player_name = ""
 player_class = ""
 player_health = 100
 player_mana = 50
 gold = 100
-
 
 print("\n" + "="*50)
 print("=== CHARACTER CREATION ===")
@@ -87,13 +30,13 @@ while not name_valid:
     else:
         print("Name must be between 2 and 15 characters!")
 
-# Match statement: Character class selection
 print("\nAvailable classes:")
 print("1. Warrior - High health, low mana")
 print("2. Mage - Low health, high mana")
 print("3. Rogue - Balanced stats")
+print("4. Knight - High health, balanced mana")
 
-class_choice = input("Select your class (1-3): ")
+class_choice = input("Select your class (1-4): ")
 match class_choice:
     case "1":
         player_class = "Warrior"
@@ -107,6 +50,10 @@ match class_choice:
         player_class = "Rogue"
         player_health = 100
         player_mana = 80
+    case "4":
+        player_class = "Knight"
+        player_health = 140
+        player_mana = 70
     case _:
         player_class = "Adventurer"
         player_health = 100
@@ -357,3 +304,81 @@ if level >= 20 and stats_points >= 1000:
 else:
     print("\nYou do not meet the requirements to enter the dungeon of Ra.")
     print("You are too weak to face the dungeon.")
+
+
+def enter_dungeon(player_class, player_health, player_mana, gold, inventory):
+    print("\n=== DUNGEON OF RA ===")
+    print("You step into the ancient dungeon...")
+    
+    dungeon_floors = [
+        {"name": "Hall of Echoes", "enemies": 2, "trap": True},
+        {"name": "Chamber of Shadows", "enemies": 3, "trap": False},
+        {"name": "Sanctum of Light", "enemies": 1, "trap": True},
+        {"name": "Vault of Kings", "enemies": 4, "trap": False},
+        {"name": "Heart of Ra", "enemies": 1, "trap": True}
+    ]
+    floor_num = 1
+    for floor in dungeon_floors:
+        print(f"\n--- Floor {floor_num}: {floor['name']} ---")
+       
+        if floor["trap"]:
+            print("A trap is triggered!")
+            if player_class == "Rogue" or (player_class == "Knight" and player_health > 100):
+                print("You skillfully avoid the trap!")
+            else:
+                print("You take damage from the trap!")
+                player_health -= 20
+        else:
+            print("No traps here.")
+        
+        enemies_left = floor["enemies"]
+        while enemies_left > 0 and player_health > 0:
+            print(f"Enemy appears! {enemies_left} left.")
+            
+            print("Choose action: 1. Attack 2. Defend 3. Use Mana")
+            action = input("Action (1-3): ")
+            match action:
+                case "1":
+                    print("You attack the enemy!")
+                    enemies_left -= 1
+                case "2":
+                    print("You defend and take less damage.")
+                    player_health -= 5
+                case "3":
+                    if player_mana >= 10:
+                        print("You use a mana spell!")
+                        player_mana -= 10
+                        enemies_left -= 1
+                    else:
+                        print("Not enough mana!")
+                case _:
+                    print("You hesitate and the enemy strikes!")
+                    player_health -= 10
+            
+            if player_health <= 0:
+                print("You have fallen in the dungeon...")
+                return False
+        print("Floor cleared!")
+        floor_num += 1
+    
+    all_items = all(inventory[item] for item in inventory)
+    if all_items and player_health > 0:
+        print("\nYou reach the Heart of Ra with all relics!")
+        print("A great treasure is revealed. You win!")
+        gold += 1000
+    elif player_health > 0:
+        print("\nYou reach the Heart of Ra, but lack some relics.")
+        print("You escape with your life, but not the ultimate prize.")
+    print(f"Final Health: {player_health} | Mana: {player_mana} | Gold: {gold}")
+    return True
+
+
+if __name__ == "__main__":
+    
+    dungeon_ready = False
+   
+    if level >= 20 and stats_points >= 1000 and all(inventory[item] for item in inventory):
+        dungeon_ready = True
+    if dungeon_ready:
+        enter_dungeon(player_class, player_health, player_mana, gold, inventory)
+ngeon.")
