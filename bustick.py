@@ -220,3 +220,76 @@ while start_booking == "yes":
             
     print("")
     print("Goodbye! Have a safe trip!")
+       
+    print("")
+    print("Before you go, we would love your feedback!")
+    print("--------------------------------------------------------------------")
+    print("Rate your booking experience (1-5): ")
+    
+    feedback = 0
+    valid_feedback = False
+    while valid_feedback == False:
+        feedback = int(input("Your rating: "))
+        if feedback >= 1 and feedback <= 5:
+            valid_feedback = True
+        else:
+            print("Invalid! Please enter a number between 1 and 5.")
+    
+    if feedback == 5:
+        print("Thank you! We're glad you had an excellent experience.")
+    elif feedback == 4:
+        print("Great! We're happy you enjoyed the service.")
+    elif feedback == 3:
+        print("Thanks! We'll keep working to improve.")
+    elif feedback == 2:
+        print("Sorry to hear that. We'll try to do better next time.")
+    elif feedback == 1:
+        print("We apologize for the inconvenience. Your feedback helps us improve.")
+    
+    print("")
+    print("--------------------------------------------------------------------")
+    print("Would you like to join our Loyalty Program? (yes/no)")
+    
+    join_loyalty = ""
+    valid_loyalty = False
+    while valid_loyalty == False:
+        join_loyalty = input("Enter choice: ")
+        if join_loyalty == "yes" or join_loyalty == "y" or join_loyalty == "Yes" or join_loyalty == "Y" or join_loyalty == "YES":
+            valid_loyalty = True
+            print("Congratulations! You are now a Loyalty Member.")
+            print("You earn 10 points for every ticket booked.")
+        elif join_loyalty == "no" or join_loyalty == "n" or join_loyalty == "No" or join_loyalty == "N" or join_loyalty == "NO":
+            valid_loyalty = True
+            print("No worries! You can join anytime in the future.")
+        else:
+            print("Invalid! Please enter 'yes' or 'no'.")
+    
+    print("")
+    print("--------------------------------------------------------------------")
+    print("Quick Survey: Which new route would you like us to add?")
+    print("1. Kathmandu to Dharan")
+    print("2. Kathmandu to Butwal")
+    print("3. Kathmandu to Dhangadhi")
+    
+    survey_choice = 0
+    valid_survey = False
+    while valid_survey == False:
+        survey_choice = int(input("Select option (1-3): "))
+        if survey_choice == 1:
+            valid_survey = True
+            print("Thank you! Kathmandu to Dharan noted.")
+        elif survey_choice == 2:
+            valid_survey = True
+            print("Thank you! Kathmandu to Butwal noted.")
+        elif survey_choice == 3:
+            valid_survey = True
+            print("Thank you! Kathmandu to Dhangadhi noted.")
+        else:
+            print("Invalid! Please select 1-3.")
+    
+    print("")
+    print("===================================================================================")
+    print("         -| Thank You For Your Feedback and Participation! |-                      ")
+    print("===================================================================================")
+
+    print("Goodbye! Have a safe trip!")
