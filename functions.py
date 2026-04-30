@@ -381,3 +381,116 @@ print("-------------------------------------------------------------------------
 #|Global - At the top level of the module                                                          |
 #|Built-in - In Python's built-in namespace                                                        |
 #|_________________________________________________________________________________________________|
+
+#for example :
+
+print("==========================")
+print("     -| LEGB Rule |-     ")
+print("==========================")
+
+x = "global"
+
+def outer():
+  x = "enclosing"
+  def inner():
+    x = "local"
+    print("Inner:", x)
+  inner()
+  print("Outer:", x)
+
+outer()
+print("Global:", x)
+
+print("---------------------------------------------------------------------------------------")
+
+#--------------------------------------------------------------------------------------------------
+
+print("---------------------")
+print("-| Basic Decorator |-")
+print("---------------------")
+
+def changecase(func):
+  def myinner():
+    return func().upper()
+  return myinner
+
+@changecase
+def myfunction():
+  return "Hello Sally"
+
+print(myfunction())
+
+print("---------------------------------------------------------------------------------------")
+
+#--------------------------------------------------------------------------------------------------
+
+def changecase(func):
+  def myinner():
+    return func().upper()
+  return myinner
+
+@changecase
+def myfunction():
+  return "Hello Sally"
+
+@changecase
+def otherfunction():
+  return "I am speed!"
+
+print(myfunction())
+print(otherfunction())
+
+print("----------------------------------------------------------------------------------------------")
+
+#-------------------------------------------------------------------------------------------------------
+
+def changecase(func):
+  def myinner(x):
+    return func(x).upper()
+  return myinner
+
+@changecase
+def myfunction(nam):
+  return "Hello " + nam
+
+print(myfunction("John"))
+
+print("-----------------------------------------------------------------------------------------------")
+
+#-------------------------------------------------------------------------------------------------------
+
+def changecase(func):
+  def myinner(*args, **kwargs):
+    return func(*args, **kwargs).upper()
+  return myinner
+
+@changecase
+def myfunction(nam):
+  return "Hello " + nam
+
+print(myfunction("John"))
+
+print("------------------------------------------------------------------------------------------------")
+
+#----------------------------------------------------------------------------------------------------------
+
+def changecase(n):
+  def changecase(func):
+    def myinner():
+      if n == 1:
+        a = func().lower()
+      else:
+        a = func().upper()
+      return a
+    return myinner
+  return changecase
+
+@changecase(1)
+def myfunction():
+  return "Hello Linus"
+
+print(myfunction())
+
+print("----------------------------------------------------------------------------------------------")
+
+#--------------------------------------------------------------------------------------------------------
