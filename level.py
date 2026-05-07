@@ -1,407 +1,863 @@
-level = 20
-stats_points = 1200
-actual_beacon = True
-actual_knight = True
-actual_orb_of_truth = True
-actual_orb_slot = True
-inventory = {
-    "beacon": actual_beacon,
-    "knight": actual_knight,
-    "orb_of_truth": actual_orb_of_truth,
-    "orb_slot": actual_orb_slot
-}
+class UIFormatter:
+    """Handles all UI formatting and display"""
+    BORDER = "═" * 60
+    DOUBLE_BORDER = "╔" + "═" * 58 + "╗"
+    
+    def __init__(self):
+        self.colors = {
+            "header": "✦",
+            "quest": "◈",
+            "item": "◆",
+            "enemy": "⚔",
+            "success": "✓",
+            "fail": "✗",
+            "warning": "⚠"
+        }
+    
+    def print_header(self, title):
+        print("\n" + self.DOUBLE_BORDER)
+        print("║" + f" {title:^56} " + "║")
+        print("╚" + "═" * 58 + "╝")
+    
+    def print_section(self, title):
+        print("\n" + self.BORDER)
+        print(f">>> {title} <<<")
+        print(self.BORDER)
+    
+    def print_stat_line(self, label, value, max_val=None):
+        if max_val:
+            percentage = (value / max_val) * 100
+            bar_length = int(percentage / 5)
+            bar = "█" * bar_length + "░" * (20 - bar_length)
+            print(f"  {label:15} [{bar}] {value}/{max_val}")
+        else:
+            print(f"  {label:15}: {value}")
+    
+    def print_divider(self):
+        print("─" * 60)
 
-player_name = ""
-player_class = ""
-player_health = 100
-player_mana = 50
-gold = 100
 
-print("\n" + "="*50)
-print("=== CHARACTER CREATION ===")
-print("="*50)
-
-
-name_valid = False
-while not name_valid:
-    player_name = input("Enter your character name: ")
-    if len(player_name) >= 2 and len(player_name) <= 15:
-        name_valid = True
-    else:
-        print("Name must be between 2 and 15 characters!")
-
-print("\nAvailable classes:")
-print("1. Warrior - High health, low mana")
-print("2. Mage - Low health, high mana")
-print("3. Rogue - Balanced stats")
-print("4. Knight - High health, balanced mana (COST: 200 gold)")
-
-class_choice = input("Select your class (1-4): ")
-match class_choice:
-    case "1":
-        player_class = "Warrior"
-        player_health = 150
-        player_mana = 30
-    case "2":
-        player_class = "Mage"
-        player_health = 70
-        player_mana = 150
-    case "3":
-        player_class = "Rogue"
-        player_health = 100
-        player_mana = 80
-    case "4":
+class Inventory:
+    """Manages player inventory with items"""
+    def __init__(self):
+        self.items = {
+            "beacon": False,
+            "knight": False,
+            "orb_of_truth": False,
+            "orb_slot": False
+        }
+        self.equipment = {
+            "weapon": "Iron Sword",
+            "armor": "Leather Armor",
+            "shield": "Wooden Shield"
+        }
+        self.potions = {"health_potion": 5, "mana_potion": 3}
+    
+    def get_item(self, item_name):
+        return self.items.get(item_name, False)
+    
+    def has_all_items(self):
+        return all(self.items[item] for item in self.items)
+    
+    def get_item_count(self):
+        return sum(1 for item in self.items.values() if item)
+    
+    def display_full_inventory(self, ui):
+        print("\n" + "─" * 60)
+        print("  ▶ RELICS INVENTORY:")
+        for item, has_it in self.items.items():
+            status = f"{ui.colors['success']} {item.replace('_', ' ').title()}" if has_it else f"{ui.colors['fail']} {item.replace('_', ' ').title()}"
+            print(f"    {status}")
         
-        if gold >= 200:
-            gold -= 200
-            player_class = "Knight"
-            player_health = 140
-            player_mana = 70
-            print("You purchased the Knight class for 200 gold!")
-        else:
-            print("You don't have enough gold to unlock the Knight class!")
-            print("You need 200 gold. Choosing Adventurer instead.")
-            player_class = "Adventurer"
-            player_health = 100
-            player_mana = 50
-    case _:
-        player_class = "Adventurer"
-        player_health = 100
-        player_mana = 50
-
-print(f"\nWelcome, {player_name} the {player_class}!")
-print(f"Health: {player_health} | Mana: {player_mana} | Gold: {gold}")
-
-
-stats = {"Health": player_health, "Mana": player_mana, "Gold": gold, "Level": level}
-print("\n--- Character Stats ---")
-for stat_name, stat_value in stats.items():
-     
-    if stat_value > 0:
-        print(f"  {stat_name}: {stat_value}")
-    else:
-        print(f"  {stat_name}: 0 (Needs attention!)")
-
-
-print("\n" + "="*50)
-print("=== AVAILABLE QUESTS ===")
-print("="*50)
-
-quests = [
-    {"name": "Find the Ancient Beacon", "reward": 500, "completed": False},
-    {"name": "Defeat the Shadow Knight", "reward": 750, "completed": False},
-    {"name": "Retrieve the Orb of Truth", "reward": 1000, "completed": False},
-    {"name": "Locate the Orb Slot", "reward": 600, "completed": False}
-]
-
-
-quest_num = 1
-for quest in quests:
-    if not quest["completed"]:
-        print(f"{quest_num}. {quest['name']} - Reward: {quest['reward']} gold")
-        quest_num += 1
-
-
-quest_active = True
-while quest_active:
-    
-    print("\n--- QUEST LIST ---")
-    for i, quest in enumerate(quests):
-        status = "✓ Completed" if quest["completed"] else "○ Available"
-        print(f"  {i+1}. {quest['name']} - Reward: {quest['reward']} gold [{status}]")
-    
-    print("\n--- Quest Menu ---")
-    print("1. Accept a quest")
-    print("2. View quest progress")
-    print("3. Complete a quest")
-    print("4. Return to main game")
-    
-    quest_choice = input("Select option (1-4): ")
-    
-    
-    match quest_choice:
-        case "1":
-            quest_index = input("Enter quest number to accept: ")
-            if quest_index.isdigit() and 1 <= int(quest_index) <= len(quests):
-                idx = int(quest_index) - 1
-                if not quests[idx]["completed"]:
-                    print(f"You accepted: {quests[idx]['name']}")
-                else:
-                    print("This quest is already completed!")
-            else:
-                print("Invalid quest number!")
-        case "2":
-            print("\n--- Quest Progress ---")
-            
-            for i, quest in enumerate(quests):
-                status = "✓ Completed" if quest["completed"] else "○ Available"
-                print(f"  {i+1}. {quest['name']}: {status}")
-        case "3":
-            complete_index = input("Enter quest number to complete: ")
-            if complete_index.isdigit() and 1 <= int(complete_index) <= len(quests):
-                idx = int(complete_index) - 1
-                if not quests[idx]["completed"]:
-                    quests[idx]["completed"] = True
-                    gold += quests[idx]["reward"]
-                    print(f"Quest completed! You earned {quests[idx]['reward']} gold!")
-                else:
-                    print("This quest is already completed!")
-            else:
-                print("Invalid quest number!")
-        case "4":
-            quest_active = False
-            print("Returning to your journey...")
-        case _:
-            print("Invalid option!")
-
-
-print("\n" + "="*50)
-print("=== ADVANCED STATUS CHECK ===")
-print("="*50)
-
-
-if level >= 20 and stats_points >= 1000 and gold >= 100:
-    print("✓ You meet all requirements for the dungeon!")
-elif level >= 20 and stats_points >= 1000:
-    print("⚠ You meet level/stats but need more gold!")
-elif level >= 20 or stats_points >= 1000:
-    print("⚠ You meet only one requirement!")
-else:
-    print("✗ You do not meet the requirements!")
-
-
-print("\n--- Dungeon Floor Analysis ---")
-for floor in range(1, 6):
-    if floor == 1:
-        difficulty = "Easy"
-    elif floor == 2 or floor == 3:
-        difficulty = "Medium"
-    elif floor == 4:
-        difficulty = "Hard"
-    else:
-        difficulty = "Extreme"
-    
-    
-    if floor <= 3 and player_health > 50:
-        accessible = "Accessible"
-    elif floor > 3 and player_health > 100:
-        accessible = "Accessible"
-    else:
-        accessible = "Locked"
-    
-    print(f"  Floor {floor}: {difficulty} - {accessible}")
-
-
-continue_playing = True
-while continue_playing:
-    print("\n--- Main Game Options ---")
-    print("1. Check full status")
-    print("2. View inventory")
-    print("3. Start dungeon attempt")
-    print("4. Quit game")
-    
-    main_choice = input("Select (1-4): ")
-    
-    match main_choice:
-        case "1":
-            
-            if player_class == "Warrior" and player_health >= 100:
-                print(f"\n{player_name} - {player_class}")
-                print(f"Health: {player_health} | Mana: {player_mana}")
-                print(f"Gold: {gold} | Level: {level}")
-                print("Status: Ready for combat!")
-            elif player_class == "Mage" and player_mana >= 50:
-                print(f"\n{player_name} - {player_class}")
-                print(f"Health: {player_health} | Mana: {player_mana}")
-                print(f"Gold: {gold} | Level: {level}")
-                print("Status: Ready for magic!")
-            elif player_class == "Rogue" and (player_health >= 50 or player_mana >= 30):
-                print(f"\n{player_name} - {player_class}")
-                print(f"Health: {player_health} | Mana: {player_mana}")
-                print(f"Gold: {gold} | Level: {level}")
-                print("Status: Ready for stealth!")
-            else:
-                print("\nYou need to rest and recover before continuing!")
-        case "2":
-            print("\n--- Full Inventory ---")
-            
-            item_count = 0
-            for item, has_item in inventory.items():
-                if has_item:
-                    print(f"  ✓ {item.replace('_', ' ').title()}")
-                    item_count += 1
-            print(f"Total items: {item_count}/4")
-        case "3":
-            if level >= 20 and stats_points >= 1000 and item_count == 4:
-                print("\n=== ENTERING DUNGEON OF RA ===")
-                continue_playing = False
-            else:
-                print("\nYou cannot enter yet!")
-                print(f"Requirements: Level 20+ ({level}), Stats 1000+ ({stats_points}), All items ({item_count}/4)")
-        case "4":
-            print("Thanks for playing!")
-            continue_playing = False
-        case _:
-            print("Invalid choice!")
-
-
-player_claims_beacon = input("-| Do you have the beacon? |- (yes/no): ").lower() == "yes"
-if player_claims_beacon:
-    if actual_beacon:
-        if level >= 20 and stats_points >= 1000:
-            print("The beacon radiates with a powerful energy.")
-        else:
-            print("Filthy lies. You should be ashamed wanderer.")
-    else:
-        print("Filthy lies. You should be ashamed wanderer.")
-else:
-    if actual_beacon:
-        print("Liar! You have the beacon but deny it!")
-    else:
-        print("Filthy Lies. You cannot enter the dungeon of Ra without the beacon.")
-
-player_claims_knight = input("-| Are you a knight? |- (yes/no): ").lower() == "yes"
-if player_claims_knight:
-    if actual_knight:
-        if level >= 20 and stats_points >= 1000:
-            print("Your soul resonates with the power of the beacon.")
-        else:
-            print("Filthy lies. You should be ashamed wanderer.")
-    else:
-        print("Filthy lies. You should be ashamed wanderer.")
-else:
-    if actual_knight:
-        print("Liar! You are a knight but deny it!")
-    else:
-        print("Only a knight shall resonate with the dungeon of Ra.")
-
-player_claims_orb = input("-| Do you have the Orb of Truth? |- (yes/no): ").lower() == "yes"
-if player_claims_orb:
-    if actual_orb_of_truth:
-        if level >= 20 and stats_points >= 1000:
-            print("The Orb of Truth glows with an inner light.")
-        else:
-            print("Filthy lies. You should be ashamed wanderer.")
-    else:
-        print("Filthy lies. You should be ashamed wanderer.")
-else:
-    if actual_orb_of_truth:
-        print("Liar! You have the Orb of Truth but deny it!")
-    else:
-        print("Only those who possess the Orb of Truth may enter the dungeon of Ra.")
-
-player_claims_slot = input("-| Do you have the Orb Slot? |- (yes/no): ").lower() == "yes"
-if player_claims_slot:
-    if actual_orb_slot:
-        if level >= 20 and stats_points >= 1000:
-            print("The Orb Slot closes as the orb finds the beacon.")
-        else:
-            print("Filthy lies. You should be ashamed wanderer.")
-    else:
-        print("Filthy lies. You should be ashamed wanderer.")
-else:
-    if actual_orb_slot:
-        print("Liar! You have the Orb Slot but deny it!")
-    else:
-        print("The Orb Slot remains open, waiting for the correct orb.")
-
-
-if level >= 20 and stats_points >= 1000:
-    if actual_beacon and actual_knight:
-        if actual_orb_of_truth and actual_orb_slot:
-            print("\nYou can enter the dungeon of Ra.")
-            print("You are able to place the orb of truth on the beacon.")
-        else:
-            print("\nYou cannot enter because you are still weak.")
-    else:
-        print("\nYou do not meet the requirements to enter the dungeon of Ra.")
-        print("You are not fit for this type of dungeon.")
-        print("The Orb Of Truth forbids you from entering the dungeon.")
-else:
-    print("\nYou do not meet the requirements to enter the dungeon of Ra.")
-    print("You are too weak to face the dungeon.")
-
-
-def enter_dungeon(player_class, player_health, player_mana, gold, inventory):
-    print("\n=== DUNGEON OF RA ===")
-    print("You step into the ancient dungeon...")
-    
-    dungeon_floors = [
-        {"name": "Hall of Echoes", "enemies": 2, "trap": True},
-        {"name": "Chamber of Shadows", "enemies": 3, "trap": False},
-        {"name": "Sanctum of Light", "enemies": 1, "trap": True},
-        {"name": "Vault of Kings", "enemies": 4, "trap": False},
-        {"name": "Heart of Ra", "enemies": 1, "trap": True}
-    ]
-    floor_num = 1
-    for floor in dungeon_floors:
-        print(f"\n--- Floor {floor_num}: {floor['name']} ---")
-       
-        if floor["trap"]:
-            print("A trap is triggered!")
-            if player_class == "Rogue" or (player_class == "Knight" and player_health > 100):
-                print("You skillfully avoid the trap!")
-            else:
-                print("You take damage from the trap!")
-                player_health -= 20
-        else:
-            print("No traps here.")
+        print("\n  ▶ EQUIPMENT:")
+        for equip, name in self.equipment.items():
+            print(f"    {ui.colors['item']} {equip.title()}: {name}")
         
-        enemies_left = floor["enemies"]
-        while enemies_left > 0 and player_health > 0:
-            print(f"Enemy appears! {enemies_left} left.")
-            
-            print("Choose action: 1. Attack 2. Defend 3. Use Mana")
-            action = input("Action (1-3): ")
-            match action:
-                case "1":
-                    print("You attack the enemy!")
-                    enemies_left -= 1
-                case "2":
-                    print("You defend and take less damage.")
-                    player_health -= 5
-                case "3":
-                    if player_mana >= 10:
-                        print("You use a mana spell!")
-                        player_mana -= 10
-                        enemies_left -= 1
+        print("\n  ▶ CONSUMABLES:")
+        for potion, count in self.potions.items():
+            print(f"    {ui.colors['item']} {potion.replace('_', ' ').title()}: {count}")
+        print("─" * 60)
+
+
+class Quest:
+    """Represents a single quest"""
+    def __init__(self, name, description, reward, completed=False):
+        self.name = name
+        self.description = description
+        self.reward = reward
+        self.completed = completed
+        self.progress = 0
+    
+    def complete(self):
+        self.completed = True
+        self.progress = 100
+    
+    def get_status(self):
+        return "✓ Completed" if self.completed else "○ Available"
+
+
+class QuestManager:
+    """Manages all quests for the player"""
+    def __init__(self):
+        self.quests = [
+            Quest("Find the Ancient Beacon", "Locate the powerful beacon artifact", 500),
+            Quest("Defeat the Shadow Knight", "Vanquish the dark knight guardian", 750),
+            Quest("Retrieve the Orb of Truth", "Claim the mystical orb", 1000),
+            Quest("Locate the Orb Slot", "Find where the orb belongs", 600)
+        ]
+        self.quest_artifacts = {
+            0: "beacon",
+            1: "knight",
+            2: "orb_of_truth",
+            3: "orb_slot"
+        }
+    
+    def get_available_quests(self):
+        return [q for q in self.quests if not q.completed]
+    
+    def complete_quest(self, quest_index, artifact_name=None):
+        if 0 <= quest_index < len(self.quests):
+            if not self.quests[quest_index].completed:
+                self.quests[quest_index].complete()
+                return self.quests[quest_index].reward, artifact_name
+        return 0, None
+    
+    def display_quests(self, ui):
+        for i, quest in enumerate(self.quests):
+            status = quest.get_status()
+            print(f"  {i+1}. {ui.colors['quest']} {quest.name}")
+            print(f"     Reward: {quest.reward} gold | {status}")
+            print(f"     {quest.description}")
+
+
+class Skill:
+    """Represents a player skill/ability"""
+    def __init__(self, name, mana_cost, damage, description):
+        self.name = name
+        self.mana_cost = mana_cost
+        self.damage = damage
+        self.description = description
+    
+    def can_use(self, current_mana):
+        return current_mana >= self.mana_cost
+
+
+class Player:
+    """Main player character class with all stats and methods"""
+    
+    CLASSES = {
+        "Warrior": {"health": 150, "mana": 30, "damage": 25},
+        "Mage": {"health": 70, "mana": 150, "damage": 15},
+        "Rogue": {"health": 100, "mana": 80, "damage": 22},
+        "Knight": {"health": 140, "mana": 70, "damage": 20},
+        "Adventurer": {"health": 100, "mana": 50, "damage": 18}
+    }
+    
+    def __init__(self):
+        self.name = ""
+        self.player_class = ""
+        self.level = 20
+        self.experience = 0
+        self.health = 100
+        self.max_health = 100
+        self.mana = 50
+        self.max_mana = 50
+        self.gold = 100
+        self.stats_points = 1200
+        self.inventory = Inventory()
+        self.skills = self._initialize_skills()
+    
+    def _initialize_skills(self):
+        """Create skills based on class"""
+        skills = {
+            "Power Strike": Skill("Power Strike", 0, 30, "Physical attack"),
+            "Fireball": Skill("Fireball", 20, 45, "Magical spell"),
+            "Heal": Skill("Heal", 15, 0, "Restore health")
+        }
+        return skills
+    
+    def create_character(self):
+        """Character creation process"""
+        ui = UIFormatter()
+        ui.print_header("CHARACTER CREATION")
+        
+        
+        name_valid = False
+        while not name_valid:
+            self.name = input("\n  Enter your character name: ").strip()
+            if 2 <= len(self.name) <= 15:
+                name_valid = True
+            else:
+                print("  ✗ Name must be between 2 and 15 characters!")
+        
+        
+        # Get class
+        class_selected = False
+        while not class_selected:
+            print("\n  Available Classes:")
+            print("  ════════════════════════════════════════")
+            for num, (class_name, stats) in enumerate(self.CLASSES.items(), 1):
+                if class_name == "Knight":
+                    if self.gold >= 200:
+                        cost = " (COST: 200 gold)"
                     else:
-                        print("Not enough mana!")
-                case _:
-                    print("You hesitate and the enemy strikes!")
-                    player_health -= 10
+                        cost = " (COST: 200 gold - LOCKED)"
+                else:
+                    cost = ""
+                print(f"  {num}. {class_name:12} | HP: {stats['health']:3} | Mana: {stats['mana']:3} | DMG: {stats['damage']:2}{cost}")
             
-            if player_health <= 0:
-                print("You have fallen in the dungeon...")
-                return False
-        print("Floor cleared!")
-        floor_num += 1
+            class_choice = input("\n  Select your class (1-5): ").strip()
+            
+            match class_choice:
+                case "1":
+                    self._set_class("Warrior")
+                    class_selected = True
+                case "2":
+                    self._set_class("Mage")
+                    class_selected = True
+                case "3":
+                    self._set_class("Rogue")
+                    class_selected = True
+                case "4":
+                    if self.gold >= 200:
+                        self.gold -= 200
+                        self._set_class("Knight")
+                        print("  ✓ You purchased the Knight class for 200 gold!")
+                        class_selected = True
+                    else:
+                        print(f"  ✗ Not enough gold! You have {self.gold} gold but need 200.")
+                        print("  ✗ Please choose another class (1-3).")
+                case "5":
+                    self._set_class("Adventurer")
+                    class_selected = True
+                case _:
+                    print("  ✗ Invalid option! Please enter 1-5.")
+        
+        print(f"\n  ✓ Welcome, {self.name} the {self.player_class}!")
+        ui.print_stat_line("Health", self.health, self.max_health)
+        ui.print_stat_line("Mana", self.mana, self.max_mana)
+        ui.print_stat_line("Gold", self.gold)
+        ui.print_stat_line("Level", self.level)
     
-    all_items = all(inventory[item] for item in inventory)
-    if all_items and player_health > 0:
-        print("\nYou reach the Heart of Ra with all relics!")
-        print("A great treasure is revealed. You win!")
-        gold += 1000
-    elif player_health > 0:
-        print("\nYou reach the Heart of Ra, but lack some relics.")
-        print("You escape with your life, but not the ultimate prize.")
-    print(f"Final Health: {player_health} | Mana: {player_mana} | Gold: {gold}")
-    return True
+    def _set_class(self, class_name):
+        """Set player class and update stats"""                                   
+        self.player_class = class_name
+        stats = self.CLASSES[class_name]
+        self.max_health = stats["health"]
+        self.health = stats["health"]
+        self.max_mana = stats["mana"]
+        self.mana = stats["mana"]
+    
+    def display_status(self, ui):
+        """Display detailed player status"""
+        ui.print_header(f"{self.name} - {self.player_class} Status")
+        print("\n  ▶ VITAL STATISTICS:")
+        ui.print_stat_line("Health", self.health, self.max_health)
+        ui.print_stat_line("Mana", self.mana, self.max_mana)
+        
+        print("\n  ▶ PROGRESS:")
+        ui.print_stat_line("Level", self.level)
+        ui.print_stat_line("Experience", self.experience)
+        ui.print_stat_line("Stats Points", self.stats_points)
+        
+        print("\n  ▶ RESOURCES:")
+        ui.print_stat_line("Gold", self.gold)
+        ui.print_stat_line("Relics Collected", self.inventory.get_item_count(), 4)
+        
+        
+        if self.health > self.max_health * 0.7:
+            print("\n  ✓ Status: Ready for combat!")
+        elif self.health > self.max_health * 0.3:
+            print("\n  ⚠ Status: Needs healing!")
+        else:
+            print("\n  ✗ Status: Critical condition!")
+    
+    def take_damage(self, damage):
+        """Take damage and reduce health"""
+        self.health -= damage
+        if self.health < 0:
+            self.health = 0
+    
+    def heal(self, amount):
+        """Restore health"""
+        self.health = min(self.health + amount, self.max_health)
+    
+    def use_mana(self, amount):
+        """Use mana for abilities"""
+        if self.mana >= amount:
+            self.mana -= amount
+            return True
+        return False
+    
+    def restore_mana(self, amount):
+        """Restore mana"""
+        self.mana = min(self.mana + amount, self.max_mana)
+    
+    def gain_gold(self, amount):
+        """Add gold to inventory"""
+        self.gold += amount
+    
+    def is_alive(self):
+        """Check if player is still alive"""
+        return self.health > 0
 
+
+class DungeonFloor:
+    """Represents a single dungeon floor"""
+    def __init__(self, floor_num, name, enemies, has_trap, difficulty):
+        self.floor_num = floor_num
+        self.name = name
+        self.enemies = enemies
+        self.has_trap = has_trap
+        self.difficulty = difficulty
+        self.cleared = False
+    
+    def display_info(self, ui):
+        """Display floor information"""
+        print(f"\n  {ui.colors['enemy']} Floor {self.floor_num}: {self.name}")
+        print(f"     Difficulty: {self.difficulty} | Enemies: {self.enemies} | Trap: {'Yes' if self.has_trap else 'No'}")
+
+
+class Dungeon:
+    """Manages the entire dungeon experience"""
+    def __init__(self):
+        self.floors = [
+            DungeonFloor(1, "Hall of Echoes", 2, True, "Easy"),
+            DungeonFloor(2, "Chamber of Shadows", 3, False, "Easy"),
+            DungeonFloor(3, "Sanctum of Light", 1, True, "Medium"),
+            DungeonFloor(4, "Vault of Kings", 4, False, "Hard"),
+            DungeonFloor(5, "Heart of Ra", 1, True, "Extreme")
+        ]
+        self.boss_name = "The Eternal Guardian"
+        self.boss_health = 100
+    
+    def get_accessible_floors(self, player):
+        """Return floors accessible to player"""
+        accessible = []
+        for floor in self.floors:
+            if floor.floor_num <= 3 and player.health > 50:
+                accessible.append(floor)
+            elif floor.floor_num > 3 and player.health > 100:
+                accessible.append(floor)
+        return accessible
+
+
+class GameManager:
+    """Main game manager - orchestrates all game flow"""
+    def __init__(self):
+        self.player = Player()
+        self.quest_manager = QuestManager()
+        self.dungeon = Dungeon()
+        self.ui = UIFormatter()
+        self.game_active = True
+    
+    def start_game(self):
+        """Initialize and start the game"""
+        self.player.create_character()
+        self.quest_manager.display_quests(self.ui)
+        self.show_stats_check()
+    
+    def show_stats_check(self):
+        """Show character requirements check"""
+        self.ui.print_section("ADVANCED STATUS CHECK")
+        
+        level_ok = self.player.level >= 20
+        stats_ok = self.player.stats_points >= 1000
+        gold_ok = self.player.gold >= 100
+        items_ok = self.player.inventory.has_all_items()
+        
+        print(f"  {self.ui.colors['success'] if level_ok else self.ui.colors['fail']} Level 20+ ({self.player.level})")
+        print(f"  {self.ui.colors['success'] if stats_ok else self.ui.colors['fail']} Stats Points 1000+ ({self.player.stats_points})")
+        print(f"  {self.ui.colors['success'] if gold_ok else self.ui.colors['fail']} Gold 100+ ({self.player.gold})")
+        print(f"  {self.ui.colors['success'] if items_ok else self.ui.colors['fail']} All Relics ({self.player.inventory.get_item_count()}/4)")
+        
+        if level_ok and stats_ok and items_ok:
+            print(f"\n  ✓ You can enter the dungeon!")
+        else:
+            print(f"\n  ✗ You cannot enter yet!")
+    
+    def show_dungeon_floors(self):
+        """Display available dungeon floors"""
+        self.ui.print_section("DUNGEON FLOOR ANALYSIS")
+        
+        print("\n  Analysis of accessible floors based on your health:\n")
+        for floor in self.dungeon.floors:
+            if self.player.health > (50 if floor.floor_num <= 3 else 100):
+                status = f"{self.ui.colors['success']} Accessible"
+            else:
+                status = f"{self.ui.colors['fail']} Locked"
+            
+            floor_info = f"Floor {floor.floor_num}: {floor.name:20} [{floor.difficulty:7}] - {status}"
+            print(f"  {floor_info}")
+    
+    def minigame_beacon_hunt(self):
+        """Mini-game for finding the beacon - riddle challenge"""
+        self.ui.print_section("BEACON HUNT CHALLENGE")
+        print("\n  A mystical guardian blocks your path...")
+        print("  'Answer my riddle correctly and claim the beacon!\n")
+        
+        riddles = [
+            {"q": "  I am not alive, but I grow. I don't have lungs, but I need air. What am I?", "a": "fire"},
+            {"q": "  What has cities but no houses, forests but no trees, and water but no fish?", "a": "map"},
+            {"q": "  I speak without a mouth and hear without ears. I have no body, but come alive with the wind. What am I?", "a": "echo"}
+        ]
+        
+        import random
+        riddle = random.choice(riddles)
+        print(riddle["q"])
+        
+        answer = input("\n  Your answer: ").strip().lower()
+        
+        if answer == riddle["a"]:
+            print("\n  ✓ Correct! The beacon glows in your hands!")
+            return True
+        else:
+            print(f"\n  ✗ Wrong! The answer was: {riddle['a']}")
+            return False
+    
+    def minigame_shadow_knight_battle(self):
+        """Mini-game for defeating shadow knight - simple combat"""
+        self.ui.print_section("SHADOW KNIGHT BATTLE")
+        print("\n  A dark figure emerges from the shadows...\n")
+        
+        import random
+        enemy_hp = 30
+        player_hp = self.player.health
+        rounds = 0
+        max_rounds = 5
+        
+        while enemy_hp > 0 and rounds < max_rounds:
+            rounds += 1
+            print(f"  Round {rounds}:")
+            print(f"    Your HP: {player_hp} | Enemy HP: {enemy_hp}")
+            print("    (1) Heavy Attack (2) Quick Dodge (3) Magic Strike")
+            
+            choice = input("    Choose action (1-3): ").strip()
+            
+            enemy_action = random.randint(1, 3)
+            
+            match choice:
+                case "1":
+                    damage = random.randint(8, 15)
+                    enemy_hp -= damage
+                    print(f"    ⚔ You strike hard! Deal {damage} damage!")
+                case "2":
+                    damage = random.randint(2, 5)
+                    enemy_hp -= damage
+                    print(f"    🛡 You dodge and counter! Deal {damage} damage!")
+                case "3":
+                    if self.player.mana >= 20:
+                        self.player.use_mana(20)
+                        damage = random.randint(12, 20)
+                        enemy_hp -= damage
+                        print(f"    ✨ Magical strike! Deal {damage} damage!")
+                    else:
+                        print(f"    ✗ Not enough mana!")
+                        enemy_hp -= 0
+                case _:
+                    print(f"    ⚠ You hesitate!")
+                    enemy_hp -= 0
+            
+            if enemy_hp <= 0:
+                print(f"\n  ✓ Victory! The shadow knight falls!")
+                return True
+            
+            enemy_damage = random.randint(5, 12)
+            player_hp -= enemy_damage
+            print(f"    Enemy counter-attacks! Take {enemy_damage} damage.\n")
+            
+            if player_hp <= 0:
+                print(f"  ✗ Defeat! You fall in combat...")
+                return False
+        
+        if rounds >= max_rounds:
+            print(f"  ✗ You couldn't defeat the knight in time!")
+            return False
+        return False
+    
+    def minigame_truth_puzzle(self):
+        """Mini-game for orb of truth - logic puzzle"""
+        self.ui.print_section("ORB OF TRUTH PUZZLE")
+        print("\n  An ancient puzzle stands before you...")
+        print("  Solve it to claim the Orb of Truth!\n")
+        
+        puzzles = [
+            {
+                "q": "  In a room with 3 switches and 3 lightbulbs:\n"
+                     "  - You can flip switches, but only see the bulbs once\n"
+                     "  - How do you match switches to bulbs?",
+                "a": "turn on one, leave one on, leave one off, then feel them",
+                "hints": ["bulb", "heat", "warm", "temperature", "feel", "touch"]
+            },
+            {
+                "q": "  A man pushes his car and tells his wife he's ruined.\n"
+                     "  Why?",
+                "a": "he's playing monopoly",
+                "hints": ["game", "board", "monopoly", "play"]
+            },
+            {
+                "q": "  What 4-letter word can be written forward, backward, or upside down?",
+                "a": "noon",
+                "hints": ["time", "clock", "symmetry", "mirror"]
+            }
+        ]
+        
+        import random
+        puzzle = random.choice(puzzles)
+        print(puzzle["q"])
+        
+        attempts = 0
+        while attempts < 2:
+            answer = input("\n  Your answer: ").strip().lower()
+            
+            if any(hint in answer for hint in puzzle["hints"]) or answer == puzzle["a"]:
+                print("\n  ✓ Brilliant! The Orb resonates with your wisdom!")
+                return True
+            else:
+                attempts += 1
+                if attempts < 2:
+                    print(f"  ✗ Not quite... Try again! (Attempt {attempts}/2)")
+        
+        print(f"\n  ✗ You couldn't solve the puzzle. The orb remains hidden.")
+        return False
+    
+    def minigame_slot_search(self):
+        """Mini-game for orb slot - search/find challenge"""
+        self.ui.print_section("ORB SLOT SEARCH")
+        print("\n  You must search for the hidden Orb Slot in the temple...\n")
+        
+        temple_locations = ["Altar", "Fountain", "Pillar", "Statue", "Floor"]
+        correct_location = temple_locations[0]
+        
+        import random
+        random.shuffle(temple_locations)
+        
+        print("  Available search locations:")
+        for i, location in enumerate(temple_locations, 1):
+            print(f"    {i}. {location}")
+        
+        attempts = 0
+        while attempts < 3:
+            choice = input("\n  Where will you search? (1-5): ").strip()
+            
+            if choice.isdigit() and 1 <= int(choice) <= len(temple_locations):
+                selected = temple_locations[int(choice) - 1]
+                
+                if selected == correct_location:
+                    print(f"\n  ✓ Found it! The Orb Slot was in the {selected}!")
+                    return True
+                else:
+                    attempts += 1
+                    if attempts < 3:
+                        print(f"  ✗ Not here... Try another location! ({attempts}/3 attempts)")
+                    else:
+                        print(f"  ✗ You've searched everywhere but found nothing...")
+            else:
+                print("  ✗ Invalid choice!")
+        
+        return False
+    
+    def run_quest_minigame(self, quest_idx):
+        """Run the appropriate mini-game for a quest"""
+        minigames = [
+            self.minigame_beacon_hunt,
+            self.minigame_shadow_knight_battle,
+            self.minigame_truth_puzzle,
+            self.minigame_slot_search
+        ]
+        
+        if 0 <= quest_idx < len(minigames):
+            return minigames[quest_idx]()
+        return False
+    
+    
+    def quest_menu(self):
+        """Handle quest management menu"""
+        in_quest_menu = True
+        while in_quest_menu:
+            self.ui.print_section("QUEST MANAGEMENT")
+            
+            print("\n  ▶ Available Quests:")
+            for i, quest in enumerate(self.quest_manager.quests, 1):
+                status = quest.get_status()
+                print(f"    {i}. {quest.name:30} | Reward: {quest.reward:4} gold | {status}")
+            
+            print("\n  Menu Options:")
+            print("  1. Accept a quest")
+            print("  2. View quest progress")
+            print("  3. Complete a quest")
+            print("  4. Return to main game")
+            
+            choice = input("\n  Select (1-4): ").strip()
+            
+            match choice:
+                case "1":
+                    quest_num = input("  Enter quest number to accept: ").strip()
+                    if quest_num.isdigit() and 1 <= int(quest_num) <= len(self.quest_manager.quests):
+                        idx = int(quest_num) - 1
+                        if not self.quest_manager.quests[idx].completed:
+                            print(f"  ✓ You accepted: {self.quest_manager.quests[idx].name}")
+                        else:
+                            print(f"  ✗ This quest is already completed!")
+                    else:
+                        print("  ✗ Invalid quest number!")
+                
+                case "2":
+                    print("\n  ▶ Quest Progress:")
+                    for i, quest in enumerate(self.quest_manager.quests, 1):
+                        print(f"    {i}. {quest.name:30} | {quest.get_status()}")
+                
+                case "3":
+                    quest_num = input("  Enter quest number to complete: ").strip()
+                    if quest_num.isdigit() and 1 <= int(quest_num) <= len(self.quest_manager.quests):
+                        idx = int(quest_num) - 1
+                        if not self.quest_manager.quests[idx].completed:
+                            print(f"\n  Starting quest challenge...\n")
+                            if self.run_quest_minigame(idx):
+                                reward, artifact_name = self.quest_manager.complete_quest(idx, self.quest_manager.quest_artifacts.get(idx))
+                                self.player.gain_gold(reward)
+                                artifact_key = self.quest_manager.quest_artifacts.get(idx)
+                                self.player.inventory.items[artifact_key] = True
+                                print(f"\n  ✓ Quest completed! You earned {reward} gold!")
+                                print(f"  ✓ You obtained: {artifact_key.replace('_', ' ').title()}!")
+                            else:
+                                print(f"  ✗ Quest failed! Try again later.")
+                        else:
+                            print(f"  ✗ This quest is already completed!")
+                    else:
+                        print("  ✗ Invalid quest number!")
+                
+                case "4":
+                    in_quest_menu = False
+                    print("  Returning to main game...")
+                
+                case _:
+                    print("  ✗ Invalid option!")
+    
+    def verify_artifacts(self):
+        """Verify player has all required artifacts"""
+        self.ui.print_section("ARTIFACT VERIFICATION")
+        
+        artifacts = {
+            "beacon": self.player.inventory.items.get("beacon"),
+            "knight": self.player.inventory.items.get("knight"),
+            "orb_of_truth": self.player.inventory.items.get("orb_of_truth"),
+            "orb_slot": self.player.inventory.items.get("orb_slot")
+        }
+        
+        print("\n  The guardian of the dungeon appears before you...\n")
+        print("  'Tell me truthfully, wanderer:'\n")
+        
+        responses = {}
+        responses['beacon'] = input("  -| Do you have the beacon? |- (yes/no): ").lower() == "yes"
+        responses['knight'] = input("  -| Are you a knight? |- (yes/no): ").lower() == "yes"
+        responses['orb'] = input("  -| Do you have the Orb of Truth? |- (yes/no): ").lower() == "yes"
+        responses['slot'] = input("  -| Do you have the Orb Slot? |- (yes/no): ").lower() == "yes"
+        
+        # Check for lies
+        beacon_truth = responses['beacon'] == artifacts['beacon']
+        knight_truth = responses['knight'] == artifacts['knight']
+        orb_truth = responses['orb'] == artifacts['orb_of_truth']
+        slot_truth = responses['slot'] == artifacts['orb_slot']
+        
+        print("\n  Guardian's Judgment:")
+        print("  ─" * 60)
+        
+        lies = []
+        if not beacon_truth:
+            if responses['beacon'] and not artifacts['beacon']:
+                lies.append("  ✗ You claim to have the beacon, but your inventory is empty!")
+            elif not responses['beacon'] and artifacts['beacon']:
+                lies.append("  ✗ You deny having the beacon, yet I see it in your possession!")
+        
+        if not knight_truth:
+            if responses['knight'] and not artifacts['knight']:
+                lies.append("  ✗ You claim to be a knight, but your spirit does not resonate with knighthood!")
+            elif not responses['knight'] and artifacts['knight']:
+                lies.append("  ✗ You deny being a knight, yet the knight's essence flows through you!")
+        
+        if not orb_truth:
+            if responses['orb'] and not artifacts['orb_of_truth']:
+                lies.append("  ✗ You claim to have the Orb of Truth, but it is not with you!")
+            elif not responses['orb'] and artifacts['orb_of_truth']:
+                lies.append("  ✗ You deny having the Orb of Truth, yet I sense it in your grasp!")
+        
+        if not slot_truth:
+            if responses['slot'] and not artifacts['orb_slot']:
+                lies.append("  ✗ You claim to have the Orb Slot, but it eludes my sight!")
+            elif not responses['slot'] and artifacts['orb_slot']:
+                lies.append("  ✗ You deny having the Orb Slot, yet it is visible to me!")
+        
+        if lies:
+            for lie in lies:
+                print(lie)
+            print("\n  FILTHY LIES, THOU SHALL NOT ENTER THE DUNGEON!")
+            print("  ✗ The guardian blocks your path with magical force.")
+            return False
+        else:
+            print("  ✓ The guardian nods... 'You speak truth, wanderer.'")
+            print("  ✓ The dungeon entrance glows with acceptance.")
+            return True
+    
+    def enter_dungeon(self):
+        """Enter the dungeon and engage in combat"""
+        if self.player.level < 20 or self.player.stats_points < 1000:
+            print("\n  ✗ You cannot enter yet! Insufficient level or stats.")
+            return
+        
+        if not self.player.inventory.has_all_items():
+            print("\n  ✗ You lack some relics! Cannot enter.")
+            return
+        
+        if not self.verify_artifacts():
+            print("\n  ✗ The dungeon rejects you!")
+            return
+        
+        self.ui.print_header("ENTERING DUNGEON OF RA")
+        print("\n  You step into the ancient dungeon, ready to face its challenges...\n")
+        
+        for floor in self.dungeon.floors:
+            if not self.player.is_alive():
+                break
+            
+            self._explore_floor(floor)
+        
+        
+        self._dungeon_finale()
+    
+    def _explore_floor(self, floor):
+        """Explore a single dungeon floor"""
+        floor.display_info(self.ui)
+        
+        
+        if floor.has_trap:
+            print(f"    ⚠ A trap is triggered!")
+            trap_damage = 25 if self.player.player_class != "Rogue" else 10
+            self.player.take_damage(trap_damage)
+            if self.player.player_class == "Rogue" or (self.player.player_class == "Knight" and self.player.health > 100):
+                print(f"    ✓ You skillfully avoid most damage! ({trap_damage} damage avoided)")
+            else:
+                print(f"    ✗ You take {trap_damage} damage from the trap!")
+        
+        
+        enemies_left = floor.enemies
+        while enemies_left > 0 and self.player.is_alive():
+            self._handle_combat(enemies_left)
+            enemies_left -= 1
+        
+        if self.player.is_alive():
+            print(f"    ✓ Floor cleared! Moving forward...")
+        
+        print("    " + "─" * 56)
+    
+    def _handle_combat(self, enemies_remaining):
+        """Handle single combat encounter"""
+        print(f"\n    {self.ui.colors['enemy']} Enemy appears! ({enemies_remaining} more)")
+        print(f"    Your HP: {self.player.health}/{self.player.max_health} | Mana: {self.player.mana}/{self.player.max_mana}")
+        print(f"    Actions: (1) Attack (2) Defend (3) Use Skill (4) Heal")
+        
+        action = input("    Choose action (1-4): ").strip()
+        
+        match action:
+            case "1":
+                damage = 15 + (5 if self.player.player_class == "Warrior" else 0)
+                print(f"    ⚔ You attack! Deal {damage} damage!")
+                enemy_damage = max(0, 10 - (3 if self.player.player_class == "Knight" else 0))
+            case "2":
+                print(f"    🛡 You defend! Reduced damage incoming...")
+                enemy_damage = max(0, 5 - (2 if self.player.player_class == "Knight" else 0))
+            case "3":
+                if self.player.mana >= 15:
+                    self.player.use_mana(15)
+                    print(f"    ✨ Powerful spell! {self.player.mana}/{self.player.max_mana} mana left")
+                    enemy_damage = 2
+                else:
+                    print(f"    ✗ Not enough mana! You hesitate...")
+                    enemy_damage = 15
+            case "4":
+                if self.player.health < self.player.max_health * 0.5:
+                    self.player.heal(30)
+                    print(f"    ✓ Healing potion used! Health: {self.player.health}/{self.player.max_health}")
+                    enemy_damage = 8
+                else:
+                    print(f"    ✗ You're not hurt enough to need healing!")
+                    enemy_damage = 15
+            case _:
+                print(f"    ⚠ You hesitate and the enemy strikes!")
+                enemy_damage = 15
+        
+        self.player.take_damage(enemy_damage)
+        print(f"    Enemy deals {enemy_damage} damage! Your HP: {self.player.health}")
+    
+    def _dungeon_finale(self):
+        """Display dungeon completion status"""
+        self.ui.print_section("DUNGEON FINALE")
+        
+        if not self.player.is_alive():
+            print("\n  ✗ You have fallen in the dungeon...")
+            print(f"  Final Stats: HP {self.player.health}/{self.player.max_health} | Mana: {self.player.mana}/{self.player.max_mana}")
+            return
+        
+        all_items = self.player.inventory.has_all_items()
+        
+        if all_items and self.player.is_alive():
+            print("\n  ✓✓✓ YOU REACHED THE HEART OF RA WITH ALL RELICS! ✓✓✓")
+            print("  A great treasure is revealed! You have won!")
+            self.player.gain_gold(1000)
+            print(f"  Treasure acquired: 1000 gold!")
+        else:
+            print("\n  ✓ You reached the Heart of Ra, but lack some relics.")
+            print("  You escape with your life, but not the ultimate prize.")
+            self.player.gain_gold(200)
+        
+        print(f"\n  Final Status:")
+        print(f"    HP: {self.player.health}/{self.player.max_health}")
+        print(f"    Mana: {self.player.mana}/{self.player.max_mana}")
+        print(f"    Gold: {self.player.gold}")
+        print(f"    Level: {self.player.level}")
+    
+    def main_game_loop(self):
+        """Main game loop"""
+        while self.game_active:
+            self.ui.print_section("MAIN GAME MENU")
+            print("\n  1. Check full status")
+            print("  2. View inventory")
+            print("  3. Manage quests")
+            print("  4. View dungeon floors")
+            print("  5. Start dungeon attempt")
+            print("  6. Quit game")
+            
+            choice = input("\n  Select (1-6): ").strip()
+            
+            match choice:
+                case "1":
+                    self.player.display_status(self.ui)
+                case "2":
+                    self.player.inventory.display_full_inventory(self.ui)
+                case "3":
+                    self.quest_menu()
+                case "4":
+                    self.show_dungeon_floors()
+                case "5":
+                    self.enter_dungeon()
+                case "6":
+                    self.ui.print_header("THANKS FOR PLAYING!")
+                    print("\n  Your adventure ends here, brave wanderer.")
+                    self.game_active = False
+                case _:
+                    print("  ✗ Invalid option!")
+    
+    def run(self):
+        """Run the complete game"""
+        self.start_game()
+        self.main_game_loop()
+
+
+
+print("DUNGEON OF RA - EXPANDED RPG ADVENTURE")
+print("="*50 + "\n")
 
 if __name__ == "__main__":
-    
-    dungeon_ready = False
-    
-    
-    if level >= 20 and stats_points >= 1000 and all(inventory[item] for item in inventory):
-        
-        if player_class == "Knight":
-            dungeon_ready = True
-            print("\n=== You are a Knight and ready to enter the dungeon! ===")
-        else:
-            print("\n=== Only the Knight class can enter the Dungeon of Ra! ===")
-            print(f"You are a {player_class}, not a Knight.")
-            print("The dungeon rejects all who are not Knights!")
-    if dungeon_ready:
-        enter_dungeon(player_class, player_health, player_mana, gold, inventory)
+    game = GameManager()
+    game.run()
+
