@@ -1,7 +1,10 @@
+import textwrap
+
 class UIFormatter:
     """Handles all UI formatting and display"""
     BORDER = "═" * 60
     DOUBLE_BORDER = "╔" + "═" * 58 + "╗"
+    RESET = "\033[0m"
     
     def __init__(self):
         self.colors = {
@@ -13,111 +16,102 @@ class UIFormatter:
             "fail": "✗",
             "warning": "⚠"
         }
+        self.style_map = [
+            ("MAIN GAME MENU", 239),
+            ("CHARACTER CREATION", 235),
+            ("STATUS", 236),
+            ("QUEST", 237),
+            ("DUNGEON", 235),
+            ("ARTIFACT VERIFICATION", 239),
+            ("BEACON", 237),
+            ("ORB", 236)
+        ]
     
+    def _get_style(self, title):
+        bg_code = 236
+        fg_code = 15
+        for key, bg in self.style_map:
+            if key in title:
+                bg_code = bg
+                break
+        return f"\033[48;5;{bg_code}m\033[38;5;{fg_code}m"
+
+    def _get_option_style(self, key=""):
+        bg_code = 236
+        fg_code = 250
+        option_styles = {
+            "Available Classes": 238,
+            "Select": 238,
+            "Menu": 238,
+            "Quest": 238,
+            "Status": 238,
+            "Check": 238,
+            "Relics": 238
+        }
+        for style_key, bg in option_styles.items():
+            if style_key in key:
+                bg_code = bg
+                break
+        return f"\033[48;5;{bg_code}m\033[38;5;{fg_code}m"
+
+    def _get_box_style(self, key=""):
+        border_bg = 100
+        fill_bg = 237
+        fg_code = 250
+        border_style = f"\033[48;5;{border_bg}m\033[38;5;{fg_code}m"
+        fill_style = f"\033[48;5;{fill_bg}m\033[38;5;{fg_code}m"
+        return border_style, fill_style
+
+    def print_option_box(self, title, lines, style_key="Menu"):
+        border_style, fill_style = self._get_box_style(style_key)
+        width = 58
+        print("\n" + border_style + "╔" + "═" * width + "╗" + self.RESET)
+        print(border_style + "║" + f"{title:^{width}}" + "║" + self.RESET)
+        print(border_style + "╠" + "═" * width + "╣" + self.RESET)
+        for line in lines:
+            wrapped = textwrap.wrap(line, width)
+            if not wrapped:
+                wrapped = [""]
+            for segment in wrapped:
+                print(fill_style + "║" + segment.ljust(width) + "║" + self.RESET)
+        print(border_style + "╚" + "═" * width + "╝" + self.RESET)
+
     def print_header(self, title):
-        print("\n" + self.DOUBLE_BORDER)
-        print("║" + f" {title:^56} " + "║")
-        print("╚" + "═" * 58 + "╝")
+        style = self._get_style(title)
+        print("\n" + style + self.DOUBLE_BORDER + self.RESET)
+        print(style + "║" + f" {title:^56} " + "║" + self.RESET)
+        print(style + "╚" + "═" * 58 + "╝" + self.RESET)
     
     def print_section(self, title):
-        print("\n" + self.BORDER)
-        print(f">>> {title} <<<")
-        print(self.BORDER)
-    
-    def print_stat_line(self, label, value, max_val=None):
+        style = self._get_style(title)
+        print("\n" + style + self.BORDER + self.RESET)
+        print(style + f"{title:^60}" + self.RESET)
+        print(style + self.BORDER + self.RESET)
+
+    def print_option_block(self, title):
+        style = self._get_option_style(title)
+        print("\n" + style + self.DOUBLE_BORDER + self.RESET)
+        print(style + "║" + f" {title:^56} " + "║" + self.RESET)
+        print(style + "╚" + "═" * 58 + "╝" + self.RESET)
+
+    def print_option_line(self, text, style_key="Menu"):
+        style = self._get_option_style(style_key)
+        inner_width = 56
+        lines = textwrap.wrap(text, inner_width)
+        for line in lines:
+            print(style + "║ " + line.ljust(inner_width) + " ║" + self.RESET)
+
+    def format_stat_line(self, label, value, max_val=None):
         if max_val:
             percentage = (value / max_val) * 100
             bar_length = int(percentage / 5)
             bar = "█" * bar_length + "░" * (20 - bar_length)
-            print(f"  {label:15} [{bar}] {value}/{max_val}")
-        else:
-            print(f"  {label:15}: {value}")
-    
-    def print_divider(self):
-        print("─" * 60)
+            return f"  {label:15} [{bar}] {value}/{max_val}"
+        return f"  {label:15}: {value}"
 
-
-class Inventory:
-    """Manages player inventory with items"""
-    def __init__(self):
-        self.items = {
-            "beacon": False,
-            "knight": False,
-            "orb_of_truth": False,
-            "orb_slot": False
-        }
-        self.equipment = {
-            "weapon": "Iron Sword",
-            "armor": "Leather Armor",
-            "shield": "Wooden Shield"
-        }
-        self.potions = {"health_potion": 5, "mana_potion": 3}
-    
-    def get_item(self, item_name):
-        return self.items.get(item_name, False)
-    
-    def has_all_items(self):
-        return all(self.items[item] for item in self.items)
-    
-    def get_item_count(self):
-        return sum(1 for item in self.items.values() if item)
-    
-    def display_full_inventory(self, ui):
-        print("\n" + "─" * 60)
-        print("  ▶ RELICS INVENTORY:")
-        for item, has_it in self.items.items():
-            status = f"{ui.colors['success']} {item.replace('_', ' ').title()}" if has_it else f"{ui.colors['fail']} {item.replace('_', ' ').title()}"
-            print(f"    {status}")
-        
-        print("\n  ▶ EQUIPMENT:")
-        for equip, name in self.equipment.items():
-            print(f"    {ui.colors['item']} {equip.title()}: {name}")
-        
-        print("\n  ▶ CONSUMABLES:")
-        for potion, count in self.potions.items():
-            print(f"    {ui.colors['item']} {potion.replace('_', ' ').title()}: {count}")
-        print("─" * 60)
-
-
-class Quest:
-    """Represents a single quest"""
-    def __init__(self, name, description, reward, completed=False):
-        self.name = name
-        self.description = description
-        self.reward = reward
-        self.completed = completed
-        self.progress = 0
-    
-    def complete(self):
-        self.completed = True
-        self.progress = 100
-    
-    def get_status(self):
-        return "✓ Completed" if self.completed elseclass UIFormatter:
-    """Handles all UI formatting and display"""
-    BORDER = "═" * 60
-    DOUBLE_BORDER = "╔" + "═" * 58 + "╗"
-    
-    def __init__(self):
-        self.colors = {
-            "header": "✦",
-            "quest": "◈",
-            "item": "◆",
-            "enemy": "⚔",
-            "success": "✓",
-            "fail": "✗",
-            "warning": "⚠"
-        }
-    
-    def print_header(self, title):
-        print("\n" + self.DOUBLE_BORDER)
-        print("║" + f" {title:^56} " + "║")
-        print("╚" + "═" * 58 + "╝")
-    
-    def print_section(self, title):
-        print("\n" + self.BORDER)
-        print(f">>> {title} <<<")
-        print(self.BORDER)
+    def prompt(self, prompt_text):
+        prompt_style = "\033[48;5;237m\033[38;5;250m"
+        return input(prompt_style + prompt_text + self.RESET)
     
     def print_stat_line(self, label, value, max_val=None):
         if max_val:
@@ -158,22 +152,25 @@ class Inventory:
         return sum(1 for item in self.items.values() if item)
     
     def display_full_inventory(self, ui):
-        print("\n" + "─" * 60)
-        print("  ▶ RELICS INVENTORY:")
+        relic_lines = ["Relics Inventory:"]
         for item, has_it in self.items.items():
             display_name = item.replace('_', ' ').title()
             if item == "knights_resonance":
                 display_name = "Knight's Resonance"
-            status = f"{ui.colors['success']} {display_name}" if has_it else f"{ui.colors['fail']} {display_name}"
-            print(f"    {status}")
-        
-        print("\n  ▶ EQUIPMENT:")
+            status = f"{ui.colors['success']}Owned" if has_it else f"{ui.colors['fail']}Missing"
+            relic_lines.append(f"{display_name:28} - {status}")
+
+        equipment_lines = ["Equipment:"]
         for equip, name in self.equipment.items():
-            print(f"    {ui.colors['item']} {equip.title()}: {name}")
-        
-        print("\n  ▶ CONSUMABLES:")
+            equipment_lines.append(f"{equip.title():14}: {ui.colors['item']}{name}")
+
+        consumable_lines = ["Consumables:"]
         for potion, count in self.potions.items():
-            print(f"    {ui.colors['item']} {potion.replace('_', ' ').title()}: {count}")
+            consumable_lines.append(f"{potion.replace('_', ' ').title():20}: {ui.colors['item']}{count}")
+
+        ui.print_option_box("RELICS INVENTORY", relic_lines, "Relics")
+        ui.print_option_box("EQUIPMENT", equipment_lines, "Menu")
+        ui.print_option_box("CONSUMABLES", consumable_lines, "Menu")
         print("─" * 60)
 
 
@@ -221,11 +218,14 @@ class QuestManager:
         return 0, None
     
     def display_quests(self, ui):
-        for i, quest in enumerate(self.quests):
+        quest_lines = ["Current Quests:"]
+        for i, quest in enumerate(self.quests, 1):
             status = quest.get_status()
-            print(f"  {i+1}. {ui.colors['quest']} {quest.name}")
-            print(f"     Reward: {quest.reward} gold | {status}")
-            print(f"     {quest.description}")
+            quest_lines.append(f"{i}. {quest.name:25} | Reward: {quest.reward:3}g")
+            quest_lines.append(f"   {status}")
+            quest_lines.append(f"   {quest.description}")
+            quest_lines.append("")
+        ui.print_option_box("QUEST LOG", quest_lines, "Quest")
 
 
 class Skill:
@@ -282,7 +282,7 @@ class Player:
         
         name_valid = False
         while not name_valid:
-            self.name = input("\n  Enter your character name: ").strip()
+            self.name = ui.prompt("\n  Enter your character name: ").strip()
             if 2 <= len(self.name) <= 15:
                 name_valid = True
             else:
@@ -292,8 +292,7 @@ class Player:
         # Get class
         class_selected = False
         while not class_selected:
-            print("\n  Available Classes:")
-            print("  ════════════════════════════════════════")
+            class_options = []
             for num, (class_name, stats) in enumerate(self.CLASSES.items(), 1):
                 if class_name == "Knight":
                     if self.gold >= 200:
@@ -302,9 +301,10 @@ class Player:
                         cost = " (COST: 200 gold - LOCKED)"
                 else:
                     cost = ""
-                print(f"  {num}. {class_name:12} | HP: {stats['health']:3} | Mana: {stats['mana']:3} | DMG: {stats['damage']:2}{cost}")
+                class_options.append(f"  {num}. {class_name:12} | HP: {stats['health']:3} | Mana: {stats['mana']:3} | DMG: {stats['damage']:2}{cost}")
+            ui.print_option_box("Available Classes", class_options, "Available Classes")
             
-            class_choice = input("\n  Select your class (1-5): ").strip()
+            class_choice = ui.prompt("\n  Select your class (1-5): ").strip()
             
             match class_choice:
                 case "1":
@@ -349,26 +349,30 @@ class Player:
     def display_status(self, ui):
         """Display detailed player status"""
         ui.print_header(f"{self.name} - {self.player_class} Status")
-        print("\n  ▶ VITAL STATISTICS:")
-        ui.print_stat_line("Health", self.health, self.max_health)
-        ui.print_stat_line("Mana", self.mana, self.max_mana)
-        
-        print("\n  ▶ PROGRESS:")
-        ui.print_stat_line("Level", self.level)
-        ui.print_stat_line("Experience", self.experience)
-        ui.print_stat_line("Stats Points", self.stats_points)
-        
-        print("\n  ▶ RESOURCES:")
-        ui.print_stat_line("Gold", self.gold)
-        ui.print_stat_line("Relics Collected", self.inventory.get_item_count(), 4)
-        
-        
+        status_lines = [
+            "▶ VITAL STATISTICS:",
+            ui.format_stat_line("Health", self.health, self.max_health),
+            ui.format_stat_line("Mana", self.mana, self.max_mana),
+            "",
+            "▶ PROGRESS:",
+            ui.format_stat_line("Level", self.level),
+            ui.format_stat_line("Experience", self.experience),
+            ui.format_stat_line("Stats Points", self.stats_points),
+            "",
+            "▶ RESOURCES:",
+            ui.format_stat_line("Gold", self.gold),
+            ui.format_stat_line("Relics Collected", self.inventory.get_item_count(), 4)
+        ]
         if self.health > self.max_health * 0.7:
-            print("\n  ✓ Status: Ready for combat!")
+            status_lines.append("")
+            status_lines.append("✓ Status: Ready for combat!")
         elif self.health > self.max_health * 0.3:
-            print("\n  ⚠ Status: Needs healing!")
+            status_lines.append("")
+            status_lines.append("⚠ Status: Needs healing!")
         else:
-            print("\n  ✗ Status: Critical condition!")
+            status_lines.append("")
+            status_lines.append("✗ Status: Critical condition!")
+        ui.print_option_box("STATUS", status_lines, "Status")
     
     def take_damage(self, damage):
         """Take damage and reduce health"""
@@ -412,8 +416,11 @@ class DungeonFloor:
     
     def display_info(self, ui):
         """Display floor information"""
-        print(f"\n  {ui.colors['enemy']} Floor {self.floor_num}: {self.name}")
-        print(f"     Difficulty: {self.difficulty} | Enemies: {self.enemies} | Trap: {'Yes' if self.has_trap else 'No'}")
+        floor_lines = [
+            f"Floor {self.floor_num}: {self.name}",
+            f"Difficulty: {self.difficulty} | Enemies: {self.enemies} | Trap: {'Yes' if self.has_trap else 'No'}"
+        ]
+        ui.print_option_box(f"FLOOR {self.floor_num} - {self.name.upper()}", floor_lines, "Menu")
 
 
 class Dungeon:
@@ -457,17 +464,18 @@ class GameManager:
     
     def show_stats_check(self):
         """Show character requirements check"""
-        self.ui.print_section("ADVANCED STATUS CHECK")
-        
         level_ok = self.player.level >= 20
         stats_ok = self.player.stats_points >= 1000
         gold_ok = self.player.gold >= 100
         items_ok = self.player.inventory.has_all_items()
         
-        print(f"  {self.ui.colors['success'] if level_ok else self.ui.colors['fail']} Level 20+ ({self.player.level})")
-        print(f"  {self.ui.colors['success'] if stats_ok else self.ui.colors['fail']} Stats Points 1000+ ({self.player.stats_points})")
-        print(f"  {self.ui.colors['success'] if gold_ok else self.ui.colors['fail']} Gold 100+ ({self.player.gold})")
-        print(f"  {self.ui.colors['success'] if items_ok else self.ui.colors['fail']} All Relics ({self.player.inventory.get_item_count()}/4)")
+        check_lines = [
+            f"{self.ui.colors['success'] if level_ok else self.ui.colors['fail']} Level 20+ ({self.player.level})",
+            f"{self.ui.colors['success'] if stats_ok else self.ui.colors['fail']} Stats Points 1000+ ({self.player.stats_points})",
+            f"{self.ui.colors['success'] if gold_ok else self.ui.colors['fail']} Gold 100+ ({self.player.gold})",
+            f"{self.ui.colors['success'] if items_ok else self.ui.colors['fail']} All Relics ({self.player.inventory.get_item_count()}/4)"
+        ]
+        self.ui.print_option_box("ADVANCED STATUS CHECK", check_lines, "Check")
         
         if level_ok and stats_ok and items_ok:
             print(f"\n  ✓ You can enter the dungeon!")
@@ -476,23 +484,19 @@ class GameManager:
     
     def show_dungeon_floors(self):
         """Display available dungeon floors"""
-        self.ui.print_section("DUNGEON FLOOR ANALYSIS")
-        
-        print("\n  Analysis of accessible floors based on your health:\n")
+        floor_lines = ["Analysis of accessible floors based on your health:"]
         for floor in self.dungeon.floors:
-            if self.player.health > (50 if floor.floor_num <= 3 else 100):
-                status = f"{self.ui.colors['success']} Accessible"
-            else:
-                status = f"{self.ui.colors['fail']} Locked"
-            
-            floor_info = f"Floor {floor.floor_num}: {floor.name:20} [{floor.difficulty:7}] - {status}"
-            print(f"  {floor_info}")
+            status = f"{self.ui.colors['success']}Accessible" if self.player.health > (50 if floor.floor_num <= 3 else 100) else f"{self.ui.colors['fail']}Locked"
+            floor_lines.append(f"Floor {floor.floor_num}: {floor.name:20} [{floor.difficulty:7}] - {status}")
+        self.ui.print_option_box("DUNGEON FLOOR ANALYSIS", floor_lines, "Menu")
     
     def minigame_beacon_hunt(self):
         """Mini-game for finding the beacon - riddle challenge"""
-        self.ui.print_section("BEACON HUNT CHALLENGE")
-        print("\n  A mystical guardian blocks your path...")
-        print("  'Answer my riddle correctly and claim the beacon!\n")
+        challenge_lines = [
+            "A mystical guardian blocks your path...",
+            "Answer my riddle correctly and claim the beacon!"
+        ]
+        self.ui.print_option_box("BEACON HUNT CHALLENGE", challenge_lines, "Quest")
         
         riddles = [
             {"q": "  I am not alive, but I grow. I don't have lungs, but I need air. What am I?", "a": "fire"},
@@ -504,7 +508,7 @@ class GameManager:
         riddle = random.choice(riddles)
         print(riddle["q"])
         
-        answer = input("\n  Your answer: ").strip().lower()
+        answer = self.ui.prompt("\n  Your answer: ").strip().lower()
         
         if answer == riddle["a"]:
             print("\n  ✓ Correct! The beacon glows in your hands!")
@@ -526,14 +530,18 @@ class GameManager:
         
         while enemy_hp > 0 and rounds < max_rounds:
             rounds += 1
-            print(f"  Round {rounds}:")
-            self.ui.print_stat_line("Health", player_hp, self.player.max_health)
-            self.ui.print_stat_line("Mana", self.player.mana, self.player.max_mana)
-            print(f"    Enemy HP: {enemy_hp}")
-            print("    (1) Heavy Attack  (2) Quick Dodge  (3) Magic Strike")
-            print("    (4) Block  (5) Heal")
+            battle_lines = [
+                f"Round {rounds}",
+                self.ui.format_stat_line("Health", player_hp, self.player.max_health),
+                self.ui.format_stat_line("Mana", self.player.mana, self.player.max_mana),
+                f"Enemy HP: {enemy_hp}",
+                "",
+                "(1) Heavy Attack  (2) Quick Dodge  (3) Magic Strike",
+                "(4) Block  (5) Heal"
+            ]
+            self.ui.print_option_box(f"SHADOW KNIGHT ROUND {rounds}", battle_lines, "Menu")
             
-            choice = input("    Choose action (1-5): ").strip()
+            choice = self.ui.prompt("    Choose action (1-5): ").strip()
             
             match choice:
                 case "1":
@@ -581,9 +589,12 @@ class GameManager:
             
             player_hp -= enemy_damage
             player_hp = max(player_hp, 0)
-            print(f"    Enemy counter-attacks! Take {enemy_damage} damage.")
-            self.ui.print_stat_line("Health", player_hp, self.player.max_health)
-            self.ui.print_stat_line("Mana", self.player.mana, self.player.max_mana)
+            combat_lines = [
+                f"Enemy counter-attacks! Take {enemy_damage} damage.",
+                self.ui.format_stat_line("Health", player_hp, self.player.max_health),
+                self.ui.format_stat_line("Mana", self.player.mana, self.player.max_mana)
+            ]
+            self.ui.print_option_box("BATTLE UPDATE", combat_lines, "Menu")
             print()
             
             if player_hp <= 0:
@@ -597,9 +608,11 @@ class GameManager:
     
     def minigame_truth_puzzle(self):
         """Mini-game for orb of truth - logic puzzle"""
-        self.ui.print_section("ORB OF TRUTH PUZZLE")
-        print("\n  An ancient puzzle stands before you...")
-        print("  Solve it to claim the Orb of Truth!\n")
+        setup_lines = [
+            "An ancient puzzle stands before you...",
+            "Solve it to claim the Orb of Truth!"
+        ]
+        self.ui.print_option_box("ORB OF TRUTH PUZZLE", setup_lines, "Quest")
         
         puzzles = [
             {
@@ -624,11 +637,11 @@ class GameManager:
         
         import random
         puzzle = random.choice(puzzles)
-        print(puzzle["q"])
+        self.ui.print_option_box("PUZZLE", [puzzle["q"]], "Menu")
         
         attempts = 0
         while attempts < 2:
-            answer = input("\n  Your answer: ").strip().lower()
+            answer = self.ui.prompt("\n  Your answer: ").strip().lower()
             
             if any(hint in answer for hint in puzzle["hints"]) or answer == puzzle["a"]:
                 print("\n  ✓ Brilliant! The Orb resonates with your wisdom!")
@@ -643,22 +656,22 @@ class GameManager:
     
     def minigame_slot_search(self):
         """Mini-game for orb slot - search/find challenge"""
-        self.ui.print_section("ORB SLOT SEARCH")
-        print("\n  You must search for the hidden Orb Slot in the temple...\n")
-        
         temple_locations = ["Altar", "Fountain", "Pillar", "Statue", "Floor"]
         correct_location = temple_locations[0]
         
         import random
         random.shuffle(temple_locations)
         
-        print("  Available search locations:")
-        for i, location in enumerate(temple_locations, 1):
-            print(f"    {i}. {location}")
+        lines = [
+            "You must search for the hidden Orb Slot in the temple...",
+            "Available search locations:"
+        ]
+        lines.extend([f"{i}. {location}" for i, location in enumerate(temple_locations, 1)])
+        self.ui.print_option_box("ORB SLOT SEARCH", lines, "Quest")
         
         attempts = 0
         while attempts < 3:
-            choice = input("\n  Where will you search? (1-5): ").strip()
+            choice = self.ui.prompt("\n  Where will you search? (1-5): ").strip()
             
             if choice.isdigit() and 1 <= int(choice) <= len(temple_locations):
                 selected = temple_locations[int(choice) - 1]
@@ -695,24 +708,25 @@ class GameManager:
         """Handle quest management menu"""
         in_quest_menu = True
         while in_quest_menu:
-            self.ui.print_section("QUEST MANAGEMENT")
-            
-            print("\n  ▶ Available Quests:")
+            quest_lines = ["Available Quests:"]
             for i, quest in enumerate(self.quest_manager.quests, 1):
                 status = quest.get_status()
-                print(f"    {i}. {quest.name:30} | Reward: {quest.reward:4} gold | {status}")
+                quest_lines.append(f"{i}. {quest.name:25} | Reward: {quest.reward:3}g | {status}")
+            quest_lines.append("")
+            quest_lines.extend([
+                "Menu Options:",
+                "1. Accept a quest",
+                "2. View quest progress",
+                "3. Complete a quest",
+                "4. Return to main game"
+            ])
+            self.ui.print_option_box("QUEST MANAGEMENT", quest_lines, "Quest")
             
-            print("\n  Menu Options:")
-            print("  1. Accept a quest")
-            print("  2. View quest progress")
-            print("  3. Complete a quest")
-            print("  4. Return to main game")
-            
-            choice = input("\n  Select (1-4): ").strip()
+            choice = self.ui.prompt("\n  Select (1-4): ").strip()
             
             match choice:
                 case "1":
-                    quest_num = input("  Enter quest number to accept: ").strip()
+                    quest_num = self.ui.prompt("  Enter quest number to accept: ").strip()
                     if quest_num.isdigit() and 1 <= int(quest_num) <= len(self.quest_manager.quests):
                         idx = int(quest_num) - 1
                         if not self.quest_manager.quests[idx].completed:
@@ -723,12 +737,13 @@ class GameManager:
                         print("  ✗ Invalid quest number!")
                 
                 case "2":
-                    print("\n  ▶ Quest Progress:")
+                    progress_lines = ["Quest Progress:"]
                     for i, quest in enumerate(self.quest_manager.quests, 1):
-                        print(f"    {i}. {quest.name:30} | {quest.get_status()}")
+                        progress_lines.append(f"{i}. {quest.name:25} | {quest.get_status()}")
+                    self.ui.print_option_box("QUEST PROGRESS", progress_lines, "Quest")
                 
                 case "3":
-                    quest_num = input("  Enter quest number to complete: ").strip()
+                    quest_num = self.ui.prompt("  Enter quest number to complete: ").strip()
                     if quest_num.isdigit() and 1 <= int(quest_num) <= len(self.quest_manager.quests):
                         idx = int(quest_num) - 1
                         if not self.quest_manager.quests[idx].completed:
@@ -769,44 +784,44 @@ class GameManager:
         print("\n  The guardian of the dungeon appears before you...\n")
         print("  'Tell me truthfully, wanderer:'\n")
         
-        response = input("  -| Do you have the beacon? |- (yes/no): ").lower() == "yes"
+        response = self.ui.prompt("  -| Do you have the beacon? |- (yes/no): ").lower() == "yes"
         if response and not artifacts['beacon']:
             print("\n  Filthy Lies!, a kind of thou jest shall not enter the dungeon.")
             return False
         if not response and artifacts['beacon']:
-            print("\n  Filthy Lies!, thou pretendest to be humble but you do have the beacon!")
+            print("\n  Thou pretendest to be humble but you do have the beacon!")
             return False
         
-        response = input("  -| Are you a knight? |- (yes/no): ").lower() == "yes"
+        response = self.ui.prompt("  -| Are you a knight? |- (yes/no): ").lower() == "yes"
         if response and self.player.player_class != "Knight":
             print("\n  Filthy Lies!, a kind of thou jest shall not enter the dungeon.")
             return False
         if not response and self.player.player_class == "Knight":
-            print("\n  Filthy Lies!, thou pretendest to be false, yet the knight's blood runs in you!")
+            print("\n  Thou pretendest to be false, yet the knight's blood runs in you!")
             return False
         
-        response = input("  -| Do you possess the Knight's Resonance? |- (yes/no): ").lower() == "yes"
+        response = self.ui.prompt("  -| Do you possess the Knight's Resonance? |- (yes/no): ").lower() == "yes"
         if response and not artifacts['knights_resonance']:
             print("\n  Filthy Lies!, a kind of thou jest shall not enter the dungeon.")
             return False
         if not response and artifacts['knights_resonance']:
-            print("\n  Filthy Lies!, thou deny the resonance yet it hums in your hands!")
+            print("\n  Thou deny the resonance yet it hums in your hands!")
             return False
         
-        response = input("  -| Do you have the Orb of Truth? |- (yes/no): ").lower() == "yes"
+        response = self.ui.prompt("  -| Do you have the Orb of Truth? |- (yes/no): ").lower() == "yes"
         if response and not artifacts['orb_of_truth']:
             print("\n  Filthy Lies!, a kind of thou jest shall not enter the dungeon.")
             return False
         if not response and artifacts['orb_of_truth']:
-            print("\n  Filthy Lies!, thou deny the orb although it is thine!")
+            print("\n  Thou deny the orb although it is thine!")
             return False
         
-        response = input("  -| Do you have the Orb Slot? |- (yes/no): ").lower() == "yes"
+        response = self.ui.prompt("  -| Do you have the Orb Slot? |- (yes/no): ").lower() == "yes"
         if response and not artifacts['orb_slot']:
             print("\n  Filthy Lies!, a kind of thou jest shall not enter the dungeon.")
             return False
         if not response and artifacts['orb_slot']:
-            print("\n  Filthy Lies!, thou deny the slot though it is present with thee!")
+            print("\n  Thou deny the slot though it is present with thee!")
             return False
         
         print("  ✓ The guardian nods... 'You speak truth, wanderer.'")
@@ -839,7 +854,11 @@ class GameManager:
             return
         
         self.ui.print_header("ENTERING DUNGEON OF RA")
-        print("\n  You step into the ancient dungeon, ready to face its challenges...\n")
+        self.ui.print_option_box(
+            "DUNGEON ENTRY",
+            ["You step into the ancient dungeon, ready to face its challenges..."],
+            "Menu"
+        )
         
         for floor in self.dungeon.floors:
             if not self.player.is_alive():
@@ -856,13 +875,13 @@ class GameManager:
         
         
         if floor.has_trap:
-            print(f"    ⚠ A trap is triggered!")
             trap_damage = 25 if self.player.player_class != "Rogue" else 10
             self.player.take_damage(trap_damage)
-            if self.player.player_class == "Rogue" or (self.player.player_class == "Knight" and self.player.health > 100):
-                print(f"    ✓ You skillfully avoid most damage! ({trap_damage} damage avoided)")
-            else:
-                print(f"    ✗ You take {trap_damage} damage from the trap!")
+            trap_lines = [
+                "A trap is triggered!",
+                f"You take {trap_damage} damage from the trap!" if not (self.player.player_class == "Rogue" or (self.player.player_class == "Knight" and self.player.health > 100)) else f"You skillfully avoid most damage! ({trap_damage} damage avoided)"
+            ]
+            self.ui.print_option_box("TRAP ENCOUNTER", trap_lines, "Menu")
         
         
         enemies_left = floor.enemies
@@ -877,12 +896,17 @@ class GameManager:
     
     def _handle_combat(self, enemies_remaining):
         """Handle single combat encounter"""
-        print(f"\n    {self.ui.colors['enemy']} Enemy appears! ({enemies_remaining} more)")
-        self.ui.print_stat_line("Health", self.player.health, self.player.max_health)
-        self.ui.print_stat_line("Mana", self.player.mana, self.player.max_mana)
-        print("    Actions: (1) Attack  (2) Defend  (3) Use Skill  (4) Heal  (5) Block")
+        battle_lines = [
+            f"{self.ui.colors['enemy']}⚔ Enemy appears! ({enemies_remaining} more)",
+            "",
+            self.ui.format_stat_line("Health", self.player.health, self.player.max_health),
+            self.ui.format_stat_line("Mana", self.player.mana, self.player.max_mana),
+            "",
+            "Actions: (1) Attack  (2) Defend  (3) Use Skill  (4) Heal  (5) Block"
+        ]
+        self.ui.print_option_box("BATTLE SCREEN", battle_lines, "Menu")
         
-        action = input("    Choose action (1-5): ").strip()
+        action = self.ui.prompt("    Choose action (1-5): ").strip()
         
         match action:
             case "1":
@@ -922,9 +946,12 @@ class GameManager:
                 enemy_damage = 15
         
         self.player.take_damage(enemy_damage)
-        self.ui.print_stat_line("Health", self.player.health, self.player.max_health)
-        self.ui.print_stat_line("Mana", self.player.mana, self.player.max_mana)
-        print(f"    Enemy deals {enemy_damage} damage! Your HP: {self.player.health}/{self.player.max_health}")
+        outcome_lines = [
+            f"Enemy deals {enemy_damage} damage!",
+            f"Health now: {self.player.health}/{self.player.max_health}",
+            f"Mana now: {self.player.mana}/{self.player.max_mana}"
+        ]
+        self.ui.print_option_box("COMBAT RESULTS", outcome_lines, "Menu")
     
     def _dungeon_finale(self):
         """Display dungeon completion status"""
@@ -958,7 +985,7 @@ class GameManager:
         print("\n  ▶ Class Purchase Menu")
         print("    1. Knight - 200 gold")
         print("    2. Return")
-        choice = input("\n  Select an option (1-2): ").strip()
+        choice = self.ui.prompt("\n  Select an option (1-2): ").strip()
         match choice:
             case "1":
                 if self.player.player_class == "Knight":
@@ -978,16 +1005,18 @@ class GameManager:
     def main_game_loop(self):
         """Main game loop"""
         while self.game_active:
-            self.ui.print_section("MAIN GAME MENU")
-            print("\n  1. Check full status")
-            print("  2. View inventory")
-            print("  3. Manage quests")
-            print("  4. View dungeon floors")
-            print("  5. Start dungeon attempt")
-            print("  6. Buy class")
-            print("  7. Quit game")
+            menu_options = [
+                "  1. Check full status",
+                "  2. View inventory",
+                "  3. Manage quests",
+                "  4. View dungeon floors",
+                "  5. Start dungeon attempt",
+                "  6. Buy class",
+                "  7. Quit game"
+            ]
+            self.ui.print_option_box("MAIN GAME MENU", menu_options, "Main Menu")
             
-            choice = input("\n  Select (1-7): ").strip()
+            choice = self.ui.prompt("\n  Select (1-7): ").strip()
             
             match choice:
                 case "1":
@@ -1022,5 +1051,3 @@ print("="*50 + "\n")
 if __name__ == "__main__":
     game = GameManager()
     game.run()
-
-
