@@ -93,6 +93,104 @@ class Quest:
         self.progress = 100
     
     def get_status(self):
+        return "✓ Completed" if self.completed elseclass UIFormatter:
+    """Handles all UI formatting and display"""
+    BORDER = "═" * 60
+    DOUBLE_BORDER = "╔" + "═" * 58 + "╗"
+    
+    def __init__(self):
+        self.colors = {
+            "header": "✦",
+            "quest": "◈",
+            "item": "◆",
+            "enemy": "⚔",
+            "success": "✓",
+            "fail": "✗",
+            "warning": "⚠"
+        }
+    
+    def print_header(self, title):
+        print("\n" + self.DOUBLE_BORDER)
+        print("║" + f" {title:^56} " + "║")
+        print("╚" + "═" * 58 + "╝")
+    
+    def print_section(self, title):
+        print("\n" + self.BORDER)
+        print(f">>> {title} <<<")
+        print(self.BORDER)
+    
+    def print_stat_line(self, label, value, max_val=None):
+        if max_val:
+            percentage = (value / max_val) * 100
+            bar_length = int(percentage / 5)
+            bar = "█" * bar_length + "░" * (20 - bar_length)
+            print(f"  {label:15} [{bar}] {value}/{max_val}")
+        else:
+            print(f"  {label:15}: {value}")
+    
+    def print_divider(self):
+        print("─" * 60)
+
+
+class Inventory:
+    """Manages player inventory with items"""
+    def __init__(self):
+        self.items = {
+            "beacon": False,
+            "knights_resonance": False,
+            "orb_of_truth": False,
+            "orb_slot": False
+        }
+        self.equipment = {
+            "weapon": "Iron Sword",
+            "armor": "Leather Armor",
+            "shield": "Wooden Shield"
+        }
+        self.potions = {"health_potion": 5, "mana_potion": 3}
+    
+    def get_item(self, item_name):
+        return self.items.get(item_name, False)
+    
+    def has_all_items(self):
+        return all(self.items[item] for item in self.items)
+    
+    def get_item_count(self):
+        return sum(1 for item in self.items.values() if item)
+    
+    def display_full_inventory(self, ui):
+        print("\n" + "─" * 60)
+        print("  ▶ RELICS INVENTORY:")
+        for item, has_it in self.items.items():
+            display_name = item.replace('_', ' ').title()
+            if item == "knights_resonance":
+                display_name = "Knight's Resonance"
+            status = f"{ui.colors['success']} {display_name}" if has_it else f"{ui.colors['fail']} {display_name}"
+            print(f"    {status}")
+        
+        print("\n  ▶ EQUIPMENT:")
+        for equip, name in self.equipment.items():
+            print(f"    {ui.colors['item']} {equip.title()}: {name}")
+        
+        print("\n  ▶ CONSUMABLES:")
+        for potion, count in self.potions.items():
+            print(f"    {ui.colors['item']} {potion.replace('_', ' ').title()}: {count}")
+        print("─" * 60)
+
+
+class Quest:
+    """Represents a single quest"""
+    def __init__(self, name, description, reward, completed=False):
+        self.name = name
+        self.description = description
+        self.reward = reward
+        self.completed = completed
+        self.progress = 0
+    
+    def complete(self):
+        self.completed = True
+        self.progress = 100
+    
+    def get_status(self):
         return "✓ Completed" if self.completed else "○ Available"
 
 
@@ -101,13 +199,13 @@ class QuestManager:
     def __init__(self):
         self.quests = [
             Quest("Find the Ancient Beacon", "Locate the powerful beacon artifact", 500),
-            Quest("Defeat the Shadow Knight", "Vanquish the dark knight guardian", 750),
+            Quest("Defeat the Shadow Knight", "Vanquish the dark knight guardian and claim the Knight's Resonance", 750),
             Quest("Retrieve the Orb of Truth", "Claim the mystical orb", 1000),
             Quest("Locate the Orb Slot", "Find where the orb belongs", 600)
         ]
         self.quest_artifacts = {
             0: "beacon",
-            1: "knight",
+            1: "knights_resonance",
             2: "orb_of_truth",
             3: "orb_slot"
         }
@@ -429,42 +527,64 @@ class GameManager:
         while enemy_hp > 0 and rounds < max_rounds:
             rounds += 1
             print(f"  Round {rounds}:")
-            print(f"    Your HP: {player_hp} | Enemy HP: {enemy_hp}")
-            print("    (1) Heavy Attack (2) Quick Dodge (3) Magic Strike")
+            self.ui.print_stat_line("Health", player_hp, self.player.max_health)
+            self.ui.print_stat_line("Mana", self.player.mana, self.player.max_mana)
+            print(f"    Enemy HP: {enemy_hp}")
+            print("    (1) Heavy Attack  (2) Quick Dodge  (3) Magic Strike")
+            print("    (4) Block  (5) Heal")
             
-            choice = input("    Choose action (1-3): ").strip()
-            
-            enemy_action = random.randint(1, 3)
+            choice = input("    Choose action (1-5): ").strip()
             
             match choice:
                 case "1":
                     damage = random.randint(8, 15)
                     enemy_hp -= damage
                     print(f"    ⚔ You strike hard! Deal {damage} damage!")
+                    enemy_damage = random.randint(5, 12)
                 case "2":
                     damage = random.randint(2, 5)
                     enemy_hp -= damage
                     print(f"    🛡 You dodge and counter! Deal {damage} damage!")
+                    enemy_damage = random.randint(3, 7)
                 case "3":
                     if self.player.mana >= 20:
                         self.player.use_mana(20)
                         damage = random.randint(12, 20)
                         enemy_hp -= damage
                         print(f"    ✨ Magical strike! Deal {damage} damage!")
+                        enemy_damage = random.randint(5, 9)
                     else:
-                        print(f"    ✗ Not enough mana!")
-                        enemy_hp -= 0
+                        print(f"    ✗ Not enough mana! You fumble your spell...")
+                        enemy_damage = random.randint(8, 12)
+                case "4":
+                    print(f"    🛡 You raise your guard and block incoming damage!")
+                    block_raw = random.randint(5, 12)
+                    enemy_damage = max(1, int(block_raw * 0.2))
+                    print(f"    ⚔ You block 80% of the attack, taking only {enemy_damage} damage.")
+                case "5":
+                    if self.player.mana >= 15:
+                        self.player.use_mana(15)
+                        heal_amount = random.randint(12, 22)
+                        player_hp = min(player_hp + heal_amount, self.player.max_health)
+                        print(f"    ✚ You heal for {heal_amount} HP! Your health improves.")
+                        enemy_damage = random.randint(6, 10)
+                    else:
+                        print(f"    ✗ Not enough mana to heal! You fail to recover.")
+                        enemy_damage = random.randint(9, 13)
                 case _:
-                    print(f"    ⚠ You hesitate!")
-                    enemy_hp -= 0
+                    print(f"    ⚠ You hesitate! The enemy seizes the opening.")
+                    enemy_damage = random.randint(8, 13)
             
             if enemy_hp <= 0:
                 print(f"\n  ✓ Victory! The shadow knight falls!")
                 return True
             
-            enemy_damage = random.randint(5, 12)
             player_hp -= enemy_damage
-            print(f"    Enemy counter-attacks! Take {enemy_damage} damage.\n")
+            player_hp = max(player_hp, 0)
+            print(f"    Enemy counter-attacks! Take {enemy_damage} damage.")
+            self.ui.print_stat_line("Health", player_hp, self.player.max_health)
+            self.ui.print_stat_line("Mana", self.player.mana, self.player.max_mana)
+            print()
             
             if player_hp <= 0:
                 print(f"  ✗ Defeat! You fall in combat...")
@@ -618,8 +738,9 @@ class GameManager:
                                 self.player.gain_gold(reward)
                                 artifact_key = self.quest_manager.quest_artifacts.get(idx)
                                 self.player.inventory.items[artifact_key] = True
+                                display_artifact = "Knight's Resonance" if artifact_key == "knights_resonance" else artifact_key.replace('_', ' ').title()
                                 print(f"\n  ✓ Quest completed! You earned {reward} gold!")
-                                print(f"  ✓ You obtained: {artifact_key.replace('_', ' ').title()}!")
+                                print(f"  ✓ You obtained: {display_artifact}!")
                             else:
                                 print(f"  ✗ Quest failed! Try again later.")
                         else:
@@ -640,7 +761,7 @@ class GameManager:
         
         artifacts = {
             "beacon": self.player.inventory.items.get("beacon"),
-            "knight": self.player.inventory.items.get("knight"),
+            "knights_resonance": self.player.inventory.items.get("knights_resonance"),
             "orb_of_truth": self.player.inventory.items.get("orb_of_truth"),
             "orb_slot": self.player.inventory.items.get("orb_slot")
         }
@@ -648,45 +769,49 @@ class GameManager:
         print("\n  The guardian of the dungeon appears before you...\n")
         print("  'Tell me truthfully, wanderer:'\n")
         
-        responses = {}
-        responses['beacon'] = input("  -| Do you have the beacon? |- (yes/no): ").lower() == "yes"
-        responses['knight'] = input("  -| Are you a knight? |- (yes/no): ").lower() == "yes"
-        responses['orb'] = input("  -| Do you have the Orb of Truth? |- (yes/no): ").lower() == "yes"
-        responses['slot'] = input("  -| Do you have the Orb Slot? |- (yes/no): ").lower() == "yes"
+        response = input("  -| Do you have the beacon? |- (yes/no): ").lower() == "yes"
+        if response and not artifacts['beacon']:
+            print("\n  Filthy Lies!, a kind of thou jest shall not enter the dungeon.")
+            return False
+        if not response and artifacts['beacon']:
+            print("\n  Filthy Lies!, thou pretendest to be humble but you do have the beacon!")
+            return False
         
-        # Check for lies
-        beacon_truth = responses['beacon'] == artifacts['beacon']
-        knight_truth = responses['knight'] == artifacts['knight']
-        orb_truth = responses['orb'] == artifacts['orb_of_truth']
-        slot_truth = responses['slot'] == artifacts['orb_slot']
+        response = input("  -| Are you a knight? |- (yes/no): ").lower() == "yes"
+        if response and self.player.player_class != "Knight":
+            print("\n  Filthy Lies!, a kind of thou jest shall not enter the dungeon.")
+            return False
+        if not response and self.player.player_class == "Knight":
+            print("\n  Filthy Lies!, thou pretendest to be false, yet the knight's blood runs in you!")
+            return False
         
-        print("\n  Guardian's Judgment:")
-        print("  ─" * 60)
+        response = input("  -| Do you possess the Knight's Resonance? |- (yes/no): ").lower() == "yes"
+        if response and not artifacts['knights_resonance']:
+            print("\n  Filthy Lies!, a kind of thou jest shall not enter the dungeon.")
+            return False
+        if not response and artifacts['knights_resonance']:
+            print("\n  Filthy Lies!, thou deny the resonance yet it hums in your hands!")
+            return False
         
-        lies = []
-        if not beacon_truth:
-            if responses['beacon'] and not artifacts['beacon']:
-                lies.append("  ✗ You claim to have the beacon, but your inventory is empty!")
-            elif not responses['beacon'] and artifacts['beacon']:
-                lies.append("  ✗ You deny having the beacon, yet I see it in your possession!")
+        response = input("  -| Do you have the Orb of Truth? |- (yes/no): ").lower() == "yes"
+        if response and not artifacts['orb_of_truth']:
+            print("\n  Filthy Lies!, a kind of thou jest shall not enter the dungeon.")
+            return False
+        if not response and artifacts['orb_of_truth']:
+            print("\n  Filthy Lies!, thou deny the orb although it is thine!")
+            return False
         
-        if not knight_truth:
-            if responses['knight'] and not artifacts['knight']:
-                lies.append("  ✗ You claim to be a knight, but your spirit does not resonate with knighthood!")
-            elif not responses['knight'] and artifacts['knight']:
-                lies.append("  ✗ You deny being a knight, yet the knight's essence flows through you!")
+        response = input("  -| Do you have the Orb Slot? |- (yes/no): ").lower() == "yes"
+        if response and not artifacts['orb_slot']:
+            print("\n  Filthy Lies!, a kind of thou jest shall not enter the dungeon.")
+            return False
+        if not response and artifacts['orb_slot']:
+            print("\n  Filthy Lies!, thou deny the slot though it is present with thee!")
+            return False
         
-        if not orb_truth:
-            if responses['orb'] and not artifacts['orb_of_truth']:
-                lies.append("  ✗ You claim to have the Orb of Truth, but it is not with you!")
-            elif not responses['orb'] and artifacts['orb_of_truth']:
-                lies.append("  ✗ You deny having the Orb of Truth, yet I sense it in your grasp!")
-        
-        if not slot_truth:
-            if responses['slot'] and not artifacts['orb_slot']:
-                lies.append("  ✗ You claim to have the Orb Slot, but it eludes my sight!")
-            elif not responses['slot'] and artifacts['orb_slot']:
-                lies.append("  ✗ You deny having the Orb Slot, yet it is visible to me!")
+        print("  ✓ The guardian nods... 'You speak truth, wanderer.'")
+        print("  ✓ The dungeon entrance glows with acceptance.")
+        return True
         
         if lies:
             for lie in lies:
@@ -697,7 +822,7 @@ class GameManager:
         else:
             print("  ✓ The guardian nods... 'You speak truth, wanderer.'")
             print("  ✓ The dungeon entrance glows with acceptance.")
-            return True
+            return True     
     
     def enter_dungeon(self):
         """Enter the dungeon and engage in combat"""
@@ -705,8 +830,8 @@ class GameManager:
             print("\n  ✗ You cannot enter yet! Insufficient level or stats.")
             return
         
-        if not self.player.inventory.has_all_items():
-            print("\n  ✗ You lack some relics! Cannot enter.")
+        if self.player.player_class != "Knight":
+            print("\n  ✗ Only the Knight class may enter this dungeon. Become a Knight to proceed.")
             return
         
         if not self.verify_artifacts():
@@ -753,10 +878,11 @@ class GameManager:
     def _handle_combat(self, enemies_remaining):
         """Handle single combat encounter"""
         print(f"\n    {self.ui.colors['enemy']} Enemy appears! ({enemies_remaining} more)")
-        print(f"    Your HP: {self.player.health}/{self.player.max_health} | Mana: {self.player.mana}/{self.player.max_mana}")
-        print(f"    Actions: (1) Attack (2) Defend (3) Use Skill (4) Heal")
+        self.ui.print_stat_line("Health", self.player.health, self.player.max_health)
+        self.ui.print_stat_line("Mana", self.player.mana, self.player.max_mana)
+        print("    Actions: (1) Attack  (2) Defend  (3) Use Skill  (4) Heal  (5) Block")
         
-        action = input("    Choose action (1-4): ").strip()
+        action = input("    Choose action (1-5): ").strip()
         
         match action:
             case "1":
@@ -775,19 +901,30 @@ class GameManager:
                     print(f"    ✗ Not enough mana! You hesitate...")
                     enemy_damage = 15
             case "4":
-                if self.player.health < self.player.max_health * 0.5:
+                if self.player.mana >= 15 and self.player.health < self.player.max_health * 0.5:
+                    self.player.use_mana(15)
                     self.player.heal(30)
-                    print(f"    ✓ Healing potion used! Health: {self.player.health}/{self.player.max_health}")
+                    print(f"    ✚ You heal with mana! Health is now {self.player.health}/{self.player.max_health}")
                     enemy_damage = 8
-                else:
+                elif self.player.health >= self.player.max_health * 0.5:
                     print(f"    ✗ You're not hurt enough to need healing!")
                     enemy_damage = 15
+                else:
+                    print(f"    ✗ Not enough mana to heal! You hesitate...")
+                    enemy_damage = 15
+            case "5":
+                print(f"    🛡 You brace yourself and block the attack!")
+                raw_damage = max(0, 10 - (3 if self.player.player_class == "Knight" else 0))
+                enemy_damage = max(1, int(raw_damage * 0.2))
+                print(f"    ⚔ You block 80% of incoming damage, taking only {enemy_damage}!")
             case _:
                 print(f"    ⚠ You hesitate and the enemy strikes!")
                 enemy_damage = 15
         
         self.player.take_damage(enemy_damage)
-        print(f"    Enemy deals {enemy_damage} damage! Your HP: {self.player.health}")
+        self.ui.print_stat_line("Health", self.player.health, self.player.max_health)
+        self.ui.print_stat_line("Mana", self.player.mana, self.player.max_mana)
+        print(f"    Enemy deals {enemy_damage} damage! Your HP: {self.player.health}/{self.player.max_health}")
     
     def _dungeon_finale(self):
         """Display dungeon completion status"""
@@ -816,6 +953,28 @@ class GameManager:
         print(f"    Gold: {self.player.gold}")
         print(f"    Level: {self.player.level}")
     
+    def purchase_class_menu(self):
+        """Allow player to buy a class from the main menu"""
+        print("\n  ▶ Class Purchase Menu")
+        print("    1. Knight - 200 gold")
+        print("    2. Return")
+        choice = input("\n  Select an option (1-2): ").strip()
+        match choice:
+            case "1":
+                if self.player.player_class == "Knight":
+                    print("  ✗ You already have the Knight class.")
+                    return
+                if self.player.gold >= 200:
+                    self.player.gold -= 200
+                    self.player._set_class("Knight")
+                    print("  ✓ You purchased the Knight class and your stats have been updated!")
+                else:
+                    print(f"  ✗ Not enough gold! You need 200 gold but have {self.player.gold}.")
+            case "2":
+                print("  Returning to main menu...")
+            case _:
+                print("  ✗ Invalid option!")
+
     def main_game_loop(self):
         """Main game loop"""
         while self.game_active:
@@ -825,9 +984,10 @@ class GameManager:
             print("  3. Manage quests")
             print("  4. View dungeon floors")
             print("  5. Start dungeon attempt")
-            print("  6. Quit game")
+            print("  6. Buy class")
+            print("  7. Quit game")
             
-            choice = input("\n  Select (1-6): ").strip()
+            choice = input("\n  Select (1-7): ").strip()
             
             match choice:
                 case "1":
@@ -841,6 +1001,8 @@ class GameManager:
                 case "5":
                     self.enter_dungeon()
                 case "6":
+                    self.purchase_class_menu()
+                case "7":
                     self.ui.print_header("THANKS FOR PLAYING!")
                     print("\n  Your adventure ends here, brave wanderer.")
                     self.game_active = False
@@ -860,4 +1022,5 @@ print("="*50 + "\n")
 if __name__ == "__main__":
     game = GameManager()
     game.run()
+
 
