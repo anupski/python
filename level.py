@@ -519,22 +519,30 @@ class GameManager:
     
     def minigame_shadow_knight_battle(self):
         """Mini-game for defeating shadow knight - simple combat"""
-        self.ui.print_section("SHADOW KNIGHT BATTLE")
-        print("\n  A dark figure emerges from the shadows...\n")
+        challenge_lines = [
+            "A dark figure emerges from the shadows...",
+            "Defeat the Shadow Knight in battle!"
+        ]
+        self.ui.print_option_box("SHADOW KNIGHT BATTLE", challenge_lines, "Quest")
         
         import random
-        enemy_hp = 30
+        enemy_name = "Shadow Knight"
+        enemy_health = 30
+        enemy_mana = 20
         player_hp = self.player.health
         rounds = 0
         max_rounds = 5
         
-        while enemy_hp > 0 and rounds < max_rounds:
+        while enemy_health > 0 and rounds < max_rounds:
             rounds += 1
             battle_lines = [
                 f"Round {rounds}",
-                self.ui.format_stat_line("Health", player_hp, self.player.max_health),
-                self.ui.format_stat_line("Mana", self.player.mana, self.player.max_mana),
-                f"Enemy HP: {enemy_hp}",
+                "",
+                self.ui.format_stat_line("Your Health", player_hp, self.player.max_health),
+                self.ui.format_stat_line("Your Mana", self.player.mana, self.player.max_mana),
+                "",
+                self.ui.format_stat_line("Enemy Health", enemy_health, 30),
+                self.ui.format_stat_line("Enemy Mana", enemy_mana, 20),
                 "",
                 "(1) Heavy Attack  (2) Quick Dodge  (3) Magic Strike",
                 "(4) Block  (5) Heal"
@@ -546,19 +554,19 @@ class GameManager:
             match choice:
                 case "1":
                     damage = random.randint(8, 15)
-                    enemy_hp -= damage
+                    enemy_health -= damage
                     print(f"    ⚔ You strike hard! Deal {damage} damage!")
                     enemy_damage = random.randint(5, 12)
                 case "2":
                     damage = random.randint(2, 5)
-                    enemy_hp -= damage
+                    enemy_health -= damage
                     print(f"    🛡 You dodge and counter! Deal {damage} damage!")
                     enemy_damage = random.randint(3, 7)
                 case "3":
                     if self.player.mana >= 20:
                         self.player.use_mana(20)
                         damage = random.randint(12, 20)
-                        enemy_hp -= damage
+                        enemy_health -= damage
                         print(f"    ✨ Magical strike! Deal {damage} damage!")
                         enemy_damage = random.randint(5, 9)
                     else:
@@ -583,7 +591,7 @@ class GameManager:
                     print(f"    ⚠ You hesitate! The enemy seizes the opening.")
                     enemy_damage = random.randint(8, 13)
             
-            if enemy_hp <= 0:
+            if enemy_health <= 0:
                 print(f"\n  ✓ Victory! The shadow knight falls!")
                 return True
             
@@ -896,62 +904,99 @@ class GameManager:
     
     def _handle_combat(self, enemies_remaining):
         """Handle single combat encounter"""
-        battle_lines = [
-            f"{self.ui.colors['enemy']}⚔ Enemy appears! ({enemies_remaining} more)",
-            "",
-            self.ui.format_stat_line("Health", self.player.health, self.player.max_health),
-            self.ui.format_stat_line("Mana", self.player.mana, self.player.max_mana),
-            "",
-            "Actions: (1) Attack  (2) Defend  (3) Use Skill  (4) Heal  (5) Block"
-        ]
-        self.ui.print_option_box("BATTLE SCREEN", battle_lines, "Menu")
-        
-        action = self.ui.prompt("    Choose action (1-5): ").strip()
-        
-        match action:
-            case "1":
-                damage = 15 + (5 if self.player.player_class == "Warrior" else 0)
-                print(f"    ⚔ You attack! Deal {damage} damage!")
-                enemy_damage = max(0, 10 - (3 if self.player.player_class == "Knight" else 0))
-            case "2":
-                print(f"    🛡 You defend! Reduced damage incoming...")
-                enemy_damage = max(0, 5 - (2 if self.player.player_class == "Knight" else 0))
-            case "3":
-                if self.player.mana >= 15:
-                    self.player.use_mana(15)
-                    print(f"    ✨ Powerful spell! {self.player.mana}/{self.player.max_mana} mana left")
-                    enemy_damage = 2
-                else:
-                    print(f"    ✗ Not enough mana! You hesitate...")
+        enemy_name = "Dungeon Fiend"
+        enemy_health = 50
+        enemy_max_health = 50
+        enemy_mana = 30
+        enemy_max_mana = 30
+        round_count = 1
+
+        while enemy_health > 0 and self.player.is_alive():
+            battle_lines = [
+                f"{self.ui.colors['enemy']}⚔ Enemy appears! ({enemies_remaining} more)",
+                f"Enemy: {enemy_name}",
+                "",
+                self.ui.format_stat_line("Your Health", self.player.health, self.player.max_health),
+                self.ui.format_stat_line("Your Mana", self.player.mana, self.player.max_mana),
+                "",
+                self.ui.format_stat_line("Enemy Health", enemy_health, enemy_max_health),
+                self.ui.format_stat_line("Enemy Mana", enemy_mana, enemy_max_mana),
+                "",
+                "Actions: (1) Attack  (2) Defend  (3) Use Skill  (4) Heal  (5) Block"
+            ]
+            self.ui.print_option_box(f"BATTLE SCREEN - ROUND {round_count}", battle_lines, "Menu")
+
+            action = self.ui.prompt("    Choose action (1-5): ").strip()
+            enemy_damage = 0
+            action_result = []
+
+            match action:
+                case "1":
+                    damage = 15 + (5 if self.player.player_class == "Warrior" else 0)
+                    enemy_health = max(0, enemy_health - damage)
+                    action_result.append(f"⚔ You attack! Deal {damage} damage.")
+                    enemy_damage = max(0, 10 - (3 if self.player.player_class == "Knight" else 0))
+                case "2":
+                    action_result.append("🛡 You defend! Reduced damage incoming...")
+                    enemy_damage = max(0, 5 - (2 if self.player.player_class == "Knight" else 0))
+                case "3":
+                    if self.player.mana >= 15:
+                        self.player.use_mana(15)
+                        damage = 20 + (5 if self.player.player_class == "Mage" else 0)
+                        enemy_health = max(0, enemy_health - damage)
+                        action_result.append(f"✨ Magical strike! Deal {damage} damage.")
+                        action_result.append(f"{self.player.mana}/{self.player.max_mana} mana left.")
+                        enemy_damage = 2
+                    else:
+                        action_result.append("✗ Not enough mana! You hesitate...")
+                        enemy_damage = 15
+                case "4":
+                    if self.player.mana >= 15 and self.player.health < self.player.max_health * 0.5:
+                        self.player.use_mana(15)
+                        self.player.heal(30)
+                        action_result.append(f"✚ You heal with mana! Health is now {self.player.health}/{self.player.max_health}.")
+                        enemy_damage = 8
+                    elif self.player.health >= self.player.max_health * 0.5:
+                        action_result.append("✗ You're not hurt enough to need healing!")
+                        enemy_damage = 15
+                    else:
+                        action_result.append("✗ Not enough mana to heal! You hesitate...")
+                        enemy_damage = 15
+                case "5":
+                    action_result.append("🛡 You brace yourself and block the attack!")
+                    raw_damage = max(0, 10 - (3 if self.player.player_class == "Knight" else 0))
+                    enemy_damage = max(1, int(raw_damage * 0.2))
+                    action_result.append(f"⚔ You block 80% of incoming damage, taking only {enemy_damage}.")
+                case _:
+                    action_result.append("⚠ You hesitate and the enemy strikes!")
                     enemy_damage = 15
-            case "4":
-                if self.player.mana >= 15 and self.player.health < self.player.max_health * 0.5:
-                    self.player.use_mana(15)
-                    self.player.heal(30)
-                    print(f"    ✚ You heal with mana! Health is now {self.player.health}/{self.player.max_health}")
-                    enemy_damage = 8
-                elif self.player.health >= self.player.max_health * 0.5:
-                    print(f"    ✗ You're not hurt enough to need healing!")
-                    enemy_damage = 15
-                else:
-                    print(f"    ✗ Not enough mana to heal! You hesitate...")
-                    enemy_damage = 15
-            case "5":
-                print(f"    🛡 You brace yourself and block the attack!")
-                raw_damage = max(0, 10 - (3 if self.player.player_class == "Knight" else 0))
-                enemy_damage = max(1, int(raw_damage * 0.2))
-                print(f"    ⚔ You block 80% of incoming damage, taking only {enemy_damage}!")
-            case _:
-                print(f"    ⚠ You hesitate and the enemy strikes!")
-                enemy_damage = 15
-        
-        self.player.take_damage(enemy_damage)
-        outcome_lines = [
-            f"Enemy deals {enemy_damage} damage!",
-            f"Health now: {self.player.health}/{self.player.max_health}",
-            f"Mana now: {self.player.mana}/{self.player.max_mana}"
-        ]
-        self.ui.print_option_box("COMBAT RESULTS", outcome_lines, "Menu")
+
+            if enemy_health <= 0:
+                action_result.append(f"✓ {enemy_name} falls! You win this encounter.")
+                self.ui.print_option_box("BATTLE RESULTS", action_result, "Menu")
+                return
+
+            self.player.take_damage(enemy_damage)
+            if enemy_damage > 10 and enemy_mana > 0:
+                enemy_mana = max(0, enemy_mana - 5)
+
+            outcome_lines = action_result + [
+                "",
+                f"Enemy deals {enemy_damage} damage!",
+                self.ui.format_stat_line("Your Health", self.player.health, self.player.max_health),
+                self.ui.format_stat_line("Your Mana", self.player.mana, self.player.max_mana),
+                self.ui.format_stat_line("Enemy Health", enemy_health, enemy_max_health),
+                self.ui.format_stat_line("Enemy Mana", enemy_mana, enemy_max_mana)
+            ]
+            self.ui.print_option_box("COMBAT RESULTS", outcome_lines, "Menu")
+            round_count += 1
+
+        if not self.player.is_alive():
+            self.ui.print_option_box(
+                "BATTLE FAILURE",
+                ["You have been defeated by the dungeon foe...", "Retreat and recover before trying again."],
+                "Menu"
+            )
     
     def _dungeon_finale(self):
         """Display dungeon completion status"""
@@ -1051,3 +1096,6 @@ print("="*50 + "\n")
 if __name__ == "__main__":
     game = GameManager()
     game.run()
+
+
+
