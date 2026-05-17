@@ -719,3 +719,115 @@ mylabels = ["Apples", "Bananas", "Cherries", "Dates"]
 plt.pie(y, labels = mylabels)
 plt.legend(title = "Four Fruits:")
 plt.show() 
+
+#--------------------------------------------------------------------------------------------------------
+
+import matplotlib.pyplot as plt
+import matplotlib.patheffects as path_effects
+import numpy as np
+
+sizes = [25, 30, 20, 15, 10]
+labels = ['Apples', 'Bananas', 'Cherries', 'Dates', 'Elderberries']
+colors = plt.cm.plasma(np.linspace(0.2, 0.9, len(sizes)))  
+
+explode = [0.1, 0.15, 0.05, 0.1, 0.2]
+
+fig, ax = plt.subplots(figsize=(8, 8), facecolor='lightgrey')
+
+wedges, texts, autotexts = ax.pie(
+    sizes,
+    labels=labels,
+    autopct='%1.1f%%',
+    explode=explode,
+    colors=colors,
+    shadow=True,
+    startangle=140,
+    wedgeprops={'linewidth': 2, 'edgecolor': 'white'}
+)
+
+
+plt.setp(autotexts, size=12, weight="bold", color="white",
+         path_effects=[path_effects.withStroke(linewidth=2, foreground="black")])
+plt.setp(texts, size=12, weight="bold")
+
+plt.suptitle("Fruit Distribution Pie Chart", fontsize=18, fontweight='bold', color='darkblue')
+
+circle = plt.Circle((0,0), 1.05, color='lightblue', alpha=0.2, zorder=0)
+ax.add_artist(circle)
+
+plt.show()
+
+#--------------------------------------------------------------------------------------------------------
+
+import matplotlib.pyplot as plt
+import matplotlib.patheffects as path_effects
+import numpy as np
+
+sizes = [25, 30, 20, 15, 10]
+labels = ['Apples', 'Bananas', 'Cherries', 'Dates', 'Elderberries']
+colors = plt.cm.plasma(np.linspace(0.2, 0.9, len(sizes)))
+
+
+base_explode = [0.05, 0.07, 0.03, 0.05, 0.08]
+
+fig, ax = plt.subplots(figsize=(8, 8), facecolor='lightgrey')
+wedges, texts, autotexts = ax.pie(
+    sizes,
+    labels=labels,
+    autopct='%1.1f%%',
+    explode=base_explode,
+    colors=colors,
+    shadow=True,
+    startangle=140,
+    wedgeprops={'linewidth': 2, 'edgecolor': 'white'}
+)
+
+plt.setp(autotexts, size=12, weight="bold", color="white",
+         path_effects=[path_effects.withStroke(linewidth=2, foreground="black")])
+plt.setp(texts, size=12, weight="bold")
+
+plt.suptitle("Fruit Distribution Pie Chart", fontsize=18, fontweight='bold', color='darkblue')
+
+circle = plt.Circle((0,0), 1.05, color='lightblue', alpha=0.2, zorder=0)
+ax.add_artist(circle)
+
+
+original_centers = [wedge.center for wedge in wedges]
+
+def on_click(event):
+   
+    if event.inaxes != ax:
+        return
+        
+    for i, wedge in enumerate(wedges):
+        
+        if wedge.contains(event)[0]:
+            current_center = wedge.center
+            orig_center = original_centers[i]
+            
+            
+            if current_center == orig_center:
+                theta = (wedge.theta2 + wedge.theta1) / 2
+                dx = 0.15 * np.cos(np.deg2rad(theta))
+                dy = 0.15 * np.sin(np.deg2rad(theta))
+                wedge.set_center((orig_center[0] + dx, orig_center[1] + dy))
+            else:
+                
+                wedge.set_center(orig_center)
+
+            fig.canvas.draw_idle()
+            break  
+
+fig.canvas.mpl_connect("button_press_event", on_click)
+plt.show()
+
+#--------------------------------------------------------------------------------------------------------
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv('data.csv')
+
+df.plot()
+
+plt.show()
